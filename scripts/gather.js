@@ -8,13 +8,12 @@ let item
 console.log(character)
 
 export async function loop() {
-    const action = 'gathering';
-  
-    actions.gather(character, action)
+    console.log(`Attempting to gather ${item}.`)
+    actions.gather(character, 'gathering')
       .then(async (status) => {
         switch(status) {
           case 200:
-            console.log('Your character successfully gathered the resource.');
+            console.log(`Your character successfully gathered ${item}.`);
             loop()
             break;
           case 498:
@@ -122,7 +121,7 @@ async function start() {
       console.log("Input parameters are incorrect.")
       return
     }
-        
+
     if(cooldown > 0) {
         console.log(`${character} is on cooldown for ${cooldown/1000} seconds.`)
         await actions.delay(cooldown)
@@ -133,15 +132,14 @@ async function start() {
         if(charData.x != 4 || charData.y != 1)
             await actions.move(character, 4, 1)
         await actions.depositAll(character)
+
+    }
+
+    if(charData.x != x || charData.y != y)
         await actions.move(character, x, y)
-        loop()
-    }
-    
-    else {
-        if(charData.x != x || charData.y != y)
-            await actions.move(character, x, y)
-        loop()
-    }
+
+    console.log("Starting gathering...")
+    loop()
 }
 
 start()
