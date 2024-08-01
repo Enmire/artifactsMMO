@@ -1,13 +1,14 @@
 // Actions to be used by other scripts.
-export {getCharInfo, move, gather, deposit,  delay, inventoryTotal}
+export {getCharInfo, move, gather, deposit, depositAll, delay, inventoryTotal}
 import 'dotenv/config'
 
 const server = 'https://api.artifactsmmo.com';
 const token = process.env.TOKEN
 
 async function getCharInfo(character) {
-    const url = `${server}/characters/${character}`
+    console.log("Getting character info.")
 
+    const url = `${server}/characters/${character}`
     const options = {
       method: 'GET',
       headers: {
@@ -38,11 +39,10 @@ async function postAction(character, action, body) {
 }
 
 async function move(character, x, y) {
-    const action = "move";
     const body = '{"x":' + x + ',"y":' + y + '}'
     
     try {
-        await postAction(character, action, body)
+        await postAction(character, "move", body)
             .then(res => res.json())
             .then(async data => {
                 console.log(`Moved to ${x}, ${y}. Cooldown: ${data.data.cooldown.totalSeconds}s.`)
@@ -54,18 +54,15 @@ async function move(character, x, y) {
 }
 
 async function gather(character) {
-    const action = "gathering";
     let status
 
     try {
-        await postAction(character, action)
+        await postAction(character, "gathering")
             .then(res => {
                 status = res.status
                 return res.json()
             })
-            .then(async data => {
-                await delay(data.data.cooldown.totalSeconds * 1000)
-            })
+            .then(async data => await delay(data.data.cooldown.totalSeconds * 1000))
     } catch (error) {
       console.log(error);
     }
@@ -89,6 +86,19 @@ async function deposit(character, item, quantity) {
     }
 }
 
+async function depositAll(character) {
+    const charData = await getCharInfo(character)
+    console.log("Character info for depositAll received.\n")
+    console.log(charData)
+
+    for(const slot of charData.inventory) {
+      if(slot.quantity > 0) {
+        console.log(`Depositing ${slot.code}...`)
+        await deposit(character, slot.code, slot.quantity)
+      }
+    }
+}
+
 function delay(delayInMs) {
     return new Promise(resolve => setTimeout(resolve, delayInMs));
 };
@@ -96,4 +106,3 @@ function delay(delayInMs) {
 function inventoryTotal(charData) {
     return charData.inventory.reduce((acc, slot) => slot.quantity + acc, 0)
 }
-

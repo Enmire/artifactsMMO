@@ -12,7 +12,7 @@ The Actions.js script requires your accounts AuthToken to make its requests. Go 
 TOKEN = <YOUR_AUTH_TOKEN>
 ```
 
-## Running a SCript
+## Running a Script
 
 Scripts currently only require one console input, which is the character name. Example:
 ```bash
