@@ -1,36 +1,37 @@
 import * as actions from './actions.js';
+import * as helpers from './helpers.js'
 
 const character = process.argv[2]
 const command = process.argv[3]
 let x
 let y
-let item
+let code
 console.log(character)
 
-export async function loop() {
-    console.log(`Attempting to gather ${item}.`)
+async function loop() {
+    console.log(`Attempting to gather from ${code}.`)
     actions.gather(character, 'gathering')
       .then(async (status) => {
         switch(status) {
           case 200:
-            console.log(`Your character successfully gathered ${item}.`);
+            console.log(`${character} successfully gathered from ${code}.`);
             loop()
             break;
           case 498:
             console.log('The character cannot be found on your account.');
             return;
           case 497:
-            console.log("Your character's inventory is full.");
+            console.log(`${character}'s inventory is full.`);
             await actions.move(character, 4, 1);
             await actions.depositAll(character);
             await actions.move(character, x, y)
             loop()
             break;
           case 499:
-            console.log('Your character is in cooldown.');
+            console.log(`${character} is in cooldown.`);
             return;
           case 493:
-            console.log('The resource is too high-level for your character.');
+            console.log(`The resource is too high-level for ${character}.`);
             return;
           case 598:
             console.log('No resource on this map.');
@@ -42,85 +43,17 @@ export async function loop() {
       })
 }
 
-function setParameters() {
-    console.log(`Setting parameters for ${command}.`)
-    switch(command) {
-      case "ash":
-        x = 6
-        y = 1
-        item = "ash_wood"
-        break;
-      case "spruce":
-        x = 2
-        y = 6
-        item = "spruce_wood"
-        break;
-      case "birch":
-        x = 3
-        y = 5
-        item = "birch_wood"
-        break;
-      case "dead":
-        x = 9
-        y = 8
-        item = "dead_wood"
-        break;
-      case "copper":
-        x = 2
-        y = 0
-        item = "copper_ore"
-        break;
-      case "iron":
-        x = 1
-        y = 7
-        item = "iron_ore"
-        break;
-      case "coal":
-        x = 1
-        y = 6
-        item = "coal"
-        break;
-      case "gold":
-        x = 10
-        y = -4
-        item = "gold"
-        break;
-      case "gudgeon":
-        x = 4
-        y = 2
-        item = "gudgeon"
-        break;
-      case "shrimp":
-        x = 5
-        y = 2
-        item = "shrimp"
-        break;
-      case "trout":
-        x = -2
-        y = 6
-        item = "trout"
-        break;
-      case "bass":
-        x = -3
-        y = 6
-        item = "bass"
-        break;
-      default:
-        return "error"
-    }
-
-    console.log(`Parameters set to x: ${x}, y: ${y}, item: ${item}.`)
-}
-
 async function start() {
     const charData = await actions.getCharInfo(character)
     console.log("Received character info, calculating cooldown.")
     const cooldown = new Date(charData.cooldown_expiration) - new Date()
 
-    if(setParameters() === "error") {
-      console.log("Input parameters are incorrect.")
-      return
-    }
+    await actions.getClosestTileForCommand(command, 4, 1)
+      .then((tile) => {
+        x = tile.x
+        y = tile.y
+        code = tile.content.code
+      })
 
     if(cooldown > 0) {
         console.log(`${character} is on cooldown for ${cooldown/1000} seconds.`)

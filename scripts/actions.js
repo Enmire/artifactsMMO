@@ -9,28 +9,6 @@ const headers = {
   Authorization: 'Bearer ' + process.env.TOKEN
 }
 
-function getAllMaps(contentCode,  contentType) {
-    if(!contentCode && !contentType)
-      throw new Error("getAllMaps must be passed contentCode or contentType.");
-
-    let url = `${server}/maps/?page=1&size=100`
-
-    if(contentCode)
-      url += `&content_code=${contentCode}`
-    if(contentType)
-      url += `&content_type=${contentType}`
-
-    const options = {
-      method: 'GET',
-      headers
-    }
-
-    return fetch(url, options)
-        .then(res => res.json())
-        .then(data => data.data)
-        .catch((error) => console.log(error))
-}
-
 function getCharInfo(character) {
     console.log("Getting character info.")
 
@@ -44,6 +22,46 @@ function getCharInfo(character) {
         .then(res => res.json())
         .then(data => data.data)
         .catch((error) => console.log(error))
+}
+
+async function getClosestTileForCommand(command, x, y) {
+  const data = await getAllMaps(helpers.commandToCode(command))
+  let closestIndex
+  let currentDistance
+  let highestDistance = 17
+
+  for(let i = 0; i < data.length; i++) {
+    currentDistance = Math.max(Math.abs(x - data[i].x),Math.abs( y - data[i].y))
+    if(currentDistance < highestDistance) {
+      closestIndex = i
+    }
+  }
+
+  console.log(closestIndex)
+
+  return data[closestIndex]
+}
+
+async function getAllMaps(contentCode,  contentType) {
+  if(!contentCode && !contentType)
+    throw new Error("getAllMaps must be passed contentCode or contentType.");
+
+  let url = `${server}/maps/?page=1&size=100`
+
+  if(contentCode)
+    url += `&content_code=${contentCode}`
+  if(contentType)
+    url += `&content_type=${contentType}`
+
+  const options = {
+    method: 'GET',
+    headers
+  }
+
+  return fetch(url, options)
+      .then(res => res.json())
+      .then(data => data.data)
+      .catch((error) => console.log(error))
 }
 
 function postAction(character, action, body) {
@@ -122,22 +140,6 @@ async function depositAll(character) {
     }
 }
 
-async function getClosestTile(contentCode, x, y) {
-    const data = getAllMaps(contentCode)
-    let closestIndex
-    let currentDistance
-    let highestDistance = 17
-
-    for(let i = 0; i < data.length; i++) {
-      currentDistance = Math.max(Math.abs(x - data[i].x),Math.abs( y - data[i].y))
-      if(currentDistance < highestDistance) {
-        closestIndex = i
-      }
-    }
-
-    return data[closestIndex]
-}
-
 function delay(delayInMs) {
     return new Promise(resolve => setTimeout(resolve, delayInMs));
 };
@@ -146,4 +148,4 @@ function inventoryTotal(charData) {
     return charData.inventory.reduce((acc, slot) => slot.quantity + acc, 0)
 }
 
-export {getCharInfo, move, gather, deposit, depositAll, delay, inventoryTotal}
+export {getCharInfo, getClosestTileForCommand, move, gather, deposit, depositAll, delay, inventoryTotal}
