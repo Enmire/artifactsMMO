@@ -1,5 +1,5 @@
 import * as actions from './actions.js';
-import * as helpers from './helpers.js'
+import * as requests from './requests.js'
 
 const character = process.argv[2]
 const command = process.argv[3]
@@ -9,42 +9,44 @@ let code
 console.log(character)
 
 async function loop() {
-    console.log(`Attempting to gather from ${code}.`)
-    actions.gather(character, 'gathering')
+    actions.gather(character)
       .then(async (status) => {
         switch(status) {
           case 200:
-            console.log(`${character} successfully gathered from ${code}.`);
             loop()
             break;
-          case 498:
-            console.log('The character cannot be found on your account.');
+          case 486:
+            console.log(`${character} is locked. Action is already in progress.`)
+            return;
+          case 493:
+            console.log(`The resource is too high-level for ${character}.`);
             return;
           case 497:
-            console.log(`${character}'s inventory is full.`);
+            console.log(`${character}'s inventory is full. Attempting to deposit...`);
+            await actions.delay(5000)
             await actions.move(character, 4, 1);
             await actions.depositAll(character);
             await actions.move(character, x, y)
             loop()
             break;
+          case 498:
+            console.log(`${character} cannot be found on your account.`);
+            return;
           case 499:
             console.log(`${character} is in cooldown.`);
             return;
-          case 493:
-            console.log(`The resource is too high-level for ${character}.`);
-            return;
           case 598:
-            console.log('No resource on this map.');
+            console.log('Resource not found on this map.');
             return;
           default:
-            console.log('An error occurred while gathering the resource.');
+            console.log(`An error with code ${status} occurred while gathering the resource.`);
             return;
         }
       })
 }
 
 async function start() {
-    const charData = await actions.getCharInfo(character)
+    const charData = await requests.getCharInfo(character)
     console.log("Received character info, calculating cooldown.")
     const cooldown = new Date(charData.cooldown_expiration) - new Date()
 

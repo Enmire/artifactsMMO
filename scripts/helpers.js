@@ -1,3 +1,18 @@
+const error_messages = {
+  404: "Item not found.",
+  478: "Missing item or insufficient quantity in your inventory.",
+  485: "The item is already equipped.",
+  486: "An action is already in progress.",
+  490: "Character already at destination.",
+  491: "Slot is empty.",
+  493: "The resource is too high-level for your character.",
+  496: "Character level is not high enough.",
+  497: "Your character's inventory is full.",
+  498: "The character cannot be found on your account.",
+  499: "Your character is in cooldown.",
+  598: "Resource not found on this map."
+}
+
 // For functions that assist in making actions.
 function commandToItem(command) {
     switch(command) {
@@ -26,7 +41,7 @@ function commandToItem(command) {
       case "bass":
         return "bass"
       default:
-        throw new Error("The command does not match valid action.")
+        throw new Error("The command does not match valid item.")
     }
 }
 
@@ -56,6 +71,18 @@ function commandToCode(command) {
           return "trout_fishing_spot"
         case "bass":
           return "bass_fishing_spot"
+        case "woodcutting":
+          return "woodcutting"
+        case "mining":
+          return "mining"
+        case "weaponcrafting":
+          return "weaponcrafting"
+        case "gearcrafting":
+          return "gearcrafting"
+        case "jewelrycrafting":
+          return "jewelrycrafting"
+        case "cooking":
+          return "cooking"
         default:
           throw new Error("The command does not match valid action.")
       }
