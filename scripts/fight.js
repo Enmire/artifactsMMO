@@ -1,6 +1,5 @@
 import * as actions from './actions.js';
 import * as requests from './requests.js'
-import * as helpers from './helpers.js'
 
 const character = process.argv[2]
 const command = process.argv[3]
@@ -11,7 +10,7 @@ let code
 console.log(character)
 
 async function loop() {
-    actions.gather(character)
+    actions.fight(character)
       .then(async (status) => {
         switch(status) {
           case 200:
@@ -19,9 +18,6 @@ async function loop() {
             break;
           case 486:
             console.log(`${character} is locked. Action is already in progress.`)
-            return;
-          case 493:
-            console.log(`The resource is too high-level for ${character}.`);
             return;
           case 497:
             console.log(`${character}'s inventory is full. Attempting to deposit...`);
@@ -52,7 +48,7 @@ async function start() {
     console.log("Received character info, calculating cooldown.")
     const cooldown = new Date(charData.cooldown_expiration) - new Date()
 
-    await actions.getClosestTile(helpers.commandToCode(command), bank.x, bank.y)
+    await actions.getClosestTile(command, bank.x, bank.y)
       .then((tile) => {
         x = tile.x
         y = tile.y
@@ -75,7 +71,7 @@ async function start() {
     if(charData.x != x || charData.y != y)
         await actions.move(character, x, y)
 
-    console.log("Starting gathering...")
+    console.log("Starting fighting...")
     loop()
 }
 

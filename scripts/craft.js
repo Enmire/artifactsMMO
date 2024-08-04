@@ -20,14 +20,14 @@ async function loop() {
         switch(status) {
           case 200:
             amountCrafted += craftablePerTrip
-            console.log(`amountCrafted > amountToCraft: ${amountCrafted > amountToCraft}`)
+            console.log(`Total amount of ${itemCode} crafted: ${amountCrafted}`)
 
             await actions.move(character, bank.x, bank.y)
             await actions.depositAll(character)
 
             if(amountCrafted > amountToCraft) {
               console.log(`Crafted ${amountCrafted} ${itemCode}, which has reached the requested amount of ${amountToCraft}.`)
-              break;
+              return;
             }
 
             await actions.withdrawAll(character, materialsArray)
@@ -48,7 +48,7 @@ async function loop() {
             return;
           case 497:
             console.log(`${character}'s inventory is full.`);
-            break;
+            return;
           case 498:
             console.log(`${character} cannot be found on your account.`);
             return;
@@ -72,7 +72,7 @@ async function start() {
     }
 
     itemInfo = await requests.getItemInfo(itemCode)
-    craftTile = await actions.getClosestTileForCommand(itemInfo.item.craft.skill, bank.x, bank.y)
+    craftTile = await actions.getClosestTile(itemInfo.item.craft.skill, bank.x, bank.y)
     charData = await requests.getCharInfo(character)
     
     // Wait for character cooldown.
