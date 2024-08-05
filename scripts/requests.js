@@ -14,7 +14,7 @@ async function getRequest (url) {
     headers
   }
 
-  return fetch(url, options)
+  return await callWithRetry(fetch, [url, options])
     .then(res => res.json())
     .then(data => data.data)
     .catch((error) => console.log(error))
@@ -30,7 +30,7 @@ async function postRequest(character, action, logString, body) {
   let status
 
   console.log(`Sending ${action} request...`)
-  await fetch(url, options)
+  await callWithRetry(fetch, [url, options])
     .then(res => {
       status = res.status
       return res.json()
@@ -46,6 +46,19 @@ async function postRequest(character, action, logString, body) {
     .catch((error) => console.log(error))
 
   return status
+}
+
+async function callWithRetry(fn, args, retries = 1) {
+  return await fn.apply(this, args)
+    .catch(async error => {
+      if(retries > 8) {
+        console.log(`${fn} call has reached maximum retries of ${retries}.`)
+        throw error
+      }
+      console.log(`${fn} call failed. Retry count: ${retries}. Retrying...`)
+      await utils.delay(2 ** retries * 1000)
+      return callWithRetry(fn, args, retries + 1)
+    })
 }
 
 export {getRequest, postRequest}
