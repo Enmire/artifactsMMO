@@ -48,15 +48,16 @@ async function postRequest(character, action, logString, body) {
   return status
 }
 
-async function callWithRetry(fn, args, retries = 1) {
+async function callWithRetry(fn, args, retries = 0) {
   return await fn.apply(this, args)
     .catch(async error => {
-      if(retries > 8) {
-        console.log(`${fn} call has reached maximum retries of ${retries}.`)
+      if(retries > 12) {
+        console.log(`Http request to ${args[0]} has reached maximum retries of ${retries}.`)
         throw error
       }
-      console.log(`${fn} call failed. Retry count: ${retries}. Retrying...`)
-      await utils.delay(2 ** retries * 1000)
+      const delay = 2 ** retries * 1000
+      console.log(`Http request to ${args[0]} failed. Retry count: ${retries}. Retrying after ${delay/1000}s...`)
+      await utils.delay(delay)
       return callWithRetry(fn, args, retries + 1)
     })
 }
