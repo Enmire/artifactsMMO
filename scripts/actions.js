@@ -3,8 +3,8 @@ import 'dotenv/config'
 import * as helpers from './helpers.js'
 import * as requests from './requests.js'
 
-async function getClosestTileForCommand(command, x, y) {
-  const data = await requests.getAllMaps(helpers.commandToCode(command))
+async function getClosestTile(command, x, y) {
+  const data = await requests.getAllMaps(command)
   let closestIndex
   let currentDistance
   let highestDistance = 17
@@ -23,7 +23,6 @@ async function move(character, x, y) {
     const body = `{"x":${x},"y":${y}}`
     let status
     
-
     await requests.postAction(character, "move", body)
         .then(res => {
           status = res.status
@@ -31,8 +30,8 @@ async function move(character, x, y) {
         })
         .then(async data => {
           if(status === 200) {
-            console.log(`Move to ${x}, ${y} complete with status of ${status}. Cooldown: ${data.data.cooldown.totalSeconds}s.`)
-            await delay(data.data.cooldown.totalSeconds * 1000)
+            console.log(`Move to ${x}, ${y} complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s.`)
+            await delay(data.data.cooldown.total_seconds * 1000)
           }
           else
           console.log(`Move to ${x}, ${y} failed with status: ${status}.`)
@@ -52,8 +51,8 @@ async function gather(character) {
         })
         .then(async data => {
           if(status === 200) {
-            console.log(`Gathering complete with status of ${status}. Cooldown: ${data.data.cooldown.totalSeconds}s`)
-            await delay(data.data.cooldown.totalSeconds * 1000)
+            console.log(`Gathering complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s`)
+            await delay(data.data.cooldown.total_seconds * 1000)
           }
           else
             console.log(`Gathering failed with status: ${status}.`)
@@ -77,8 +76,8 @@ async function craft(character, code, quantity) {
       })
       .then(async data => {
         if(status === 200) {
-          console.log(`Crafting complete with status of ${status}. Cooldown: ${data.data.cooldown.totalSeconds}s`)
-          await delay(data.data.cooldown.totalSeconds * 1000)
+          console.log(`Crafting complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s`)
+          await delay(data.data.cooldown.total_seconds * 1000)
         }
         else
           console.log(`Crafting of ${quantity} ${code} failed with status: ${status}.`)
@@ -88,7 +87,7 @@ async function craft(character, code, quantity) {
   return status
 }
 
-async function fight() {
+async function fight(character) {
   let status
 
   await requests.postAction(character, "fight")
@@ -98,8 +97,8 @@ async function fight() {
       })
       .then(async data => {
         if(status === 200) {
-          console.log(`Fighting complete with status of ${status}. Cooldown: ${data.data.cooldown.totalSeconds}s`)
-          await delay(data.data.cooldown.totalSeconds * 1000)
+          console.log(`Fighting complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s`)
+          await delay(data.data.cooldown.total_seconds * 1000)
         }
         else
           console.log(`Fighting failed with status: ${status}.`)
@@ -122,8 +121,8 @@ async function deposit(character, item, quantity) {
         })
         .then(async data => {
           if(status === 200) {
-            console.log(`Deposit of ${quantity} ${item} complete with status of ${status}. Cooldown: ${data.data.cooldown.totalSeconds}s.`)
-            await delay(data.data.cooldown.totalSeconds * 1000)
+            console.log(`Deposit of ${quantity} ${item} complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s.`)
+            await delay(data.data.cooldown.total_seconds * 1000)
           }
           else
             console.log(`Deposit of ${quantity} ${item} failed with status: ${status}.`)
@@ -157,8 +156,8 @@ async function withdraw(character, item, quantity) {
         })
         .then(async data => {
           if(status === 200) {
-            console.log(`Withdrawal of ${quantity} ${item} complete with status of ${status}. Cooldown: ${data.data.cooldown.totalSeconds}s.`)
-            await delay(data.data.cooldown.totalSeconds * 1000)
+            console.log(`Withdrawal of ${quantity} ${item} complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s.`)
+            await delay(data.data.cooldown.total_seconds * 1000)
           }
           else
             console.log(`Withdrawal of ${quantity} ${item} failed with status: ${status}.`)
@@ -182,4 +181,4 @@ function inventoryTotal(charData) {
     return charData.inventory.reduce((acc, slot) => slot.quantity + acc, 0)
 }
 
-export {getClosestTileForCommand, move, gather, craft, fight, deposit, depositAll, withdrawAll, delay, inventoryTotal}
+export {getClosestTile, move, gather, craft, fight, deposit, depositAll, withdrawAll, delay, inventoryTotal}

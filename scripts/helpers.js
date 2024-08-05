@@ -71,18 +71,6 @@ function commandToCode(command) {
           return "trout_fishing_spot"
         case "bass":
           return "bass_fishing_spot"
-        case "woodcutting":
-          return "woodcutting"
-        case "mining":
-          return "mining"
-        case "weaponcrafting":
-          return "weaponcrafting"
-        case "gearcrafting":
-          return "gearcrafting"
-        case "jewelrycrafting":
-          return "jewelrycrafting"
-        case "cooking":
-          return "cooking"
         default:
           throw new Error("The command does not match valid action.")
       }
