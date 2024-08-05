@@ -1,10 +1,37 @@
 // Actions to be used by other scripts.
 import 'dotenv/config'
-import * as helpers from './helpers.js'
 import * as requests from './requests.js'
 
+function getCharInfo(character) {
+  const url = `/characters/${character}`
+
+  console.log(`Getting character info for ${character}.`)
+  return requests.getRequest(url)
+}
+
+function getItemInfo(itemCode) {
+  const url = `/items/${itemCode}`
+
+  console.log(`Getting item info for ${itemCode}.`)
+  return requests.getRequest(url)
+}
+
+function getAllMaps(contentCode,  contentType) {
+  if(!contentCode && !contentType)
+    throw new Error("getAllMaps must be passed contentCode or contentType.");
+
+  let url = `/maps/?page=1&size=100`
+
+  if(contentCode)
+    url += `&content_code=${contentCode}`
+  if(contentType)
+    url += `&content_type=${contentType}`
+
+  return requests.getRequest(url)
+}
+
 async function getClosestTile(command, x, y) {
-  const data = await requests.getAllMaps(command)
+  const data = await getAllMaps(command)
   let closestIndex
   let currentDistance
   let highestDistance = 17
@@ -20,120 +47,48 @@ async function getClosestTile(command, x, y) {
 }
 
 async function move(character, x, y) {
-    const body = `{"x":${x},"y":${y}}`
-    let status
-    
-    await requests.postAction(character, "move", body)
-        .then(res => {
-          status = res.status
-          return res.json()
-        })
-        .then(async data => {
-          if(status === 200) {
-            console.log(`Move to ${x}, ${y} complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s.`)
-            await delay(data.data.cooldown.total_seconds * 1000)
-          }
-          else
-          console.log(`Move to ${x}, ${y} failed with status: ${status}.`)
-        })
-        .catch((error) => console.log(error))
+  const action = "move"
+  const logString = `Move to ${x}, ${y}`
+  const body = `{"x":${x},"y":${y}}`
 
-    return status
+  return await requests.postRequest(character, action, logString, body)
 }
 
 async function gather(character) {
-    let status
+  const action = "gathering"
+  const logString = "Gathering"
 
-    await requests.postAction(character, "gathering")
-        .then(res => {
-            status = res.status
-            return res.json()
-        })
-        .then(async data => {
-          if(status === 200) {
-            console.log(`Gathering complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s`)
-            await delay(data.data.cooldown.total_seconds * 1000)
-          }
-          else
-            console.log(`Gathering failed with status: ${status}.`)
-        })
-        .catch((error) => console.log(error))
-
-    return status
+  return await requests.postRequest(character, action, logString)
 }
 
 async function craft(character, code, quantity) {
   if(!code && !quantity)
     throw new Error("Craft must be passed code and quantity.");
 
+  const action = "crafting"
+  const logString = "Crafting"
   const body = `{"code": "${code}", "quantity": ${quantity}}`
-  let status
 
-  await requests.postAction(character, "crafting", body)
-      .then(res => {
-          status = res.status
-          return res.json()
-      })
-      .then(async data => {
-        if(status === 200) {
-          console.log(`Crafting complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s`)
-          await delay(data.data.cooldown.total_seconds * 1000)
-        }
-        else
-          console.log(`Crafting of ${quantity} ${code} failed with status: ${status}.`)
-      })
-      .catch((error) => console.log(error))
-
-  return status
+  return await requests.postRequest(character, action, logString, body)
 }
 
 async function fight(character) {
-  let status
+    const action = "fight"
+    const logString = "Fighting"
 
-  await requests.postAction(character, "fight")
-      .then(res => {
-          status = res.status
-          return res.json()
-      })
-      .then(async data => {
-        if(status === 200) {
-          console.log(`Fighting complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s`)
-          await delay(data.data.cooldown.total_seconds * 1000)
-        }
-        else
-          console.log(`Fighting failed with status: ${status}.`)
-      })
-      .catch((error) => console.log(error))
-
-  return status
+    return await requests.postRequest(character, action, logString)
 }
 
 async function deposit(character, item, quantity) {
     const action = "bank/deposit";
+    const logString = `Deposit of ${quantity} ${item}`
     const body = `{"code":"${item}","quantity":${quantity}}`
-    let status
 
-
-    await requests.postAction(character, action, body)
-        .then(res => {
-          status = res.status
-          return res.json()
-        })
-        .then(async data => {
-          if(status === 200) {
-            console.log(`Deposit of ${quantity} ${item} complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s.`)
-            await delay(data.data.cooldown.total_seconds * 1000)
-          }
-          else
-            console.log(`Deposit of ${quantity} ${item} failed with status: ${status}.`)
-        })
-        .catch((error) => console.log(error))
-
-    return status
+    return await requests.postRequest(character, action, logString, body)
 }
 
 async function depositAll(character) {
-    const charData = await requests.getCharInfo(character)
+    const charData = await getCharInfo(character)
     console.log("Character info for depositAll received.\n")
 
     for(const slot of charData.inventory) {
@@ -145,40 +100,17 @@ async function depositAll(character) {
 }
 
 async function withdraw(character, item, quantity) {
-  const action = "bank/withdraw"
-  const body = `{"code":"${item}","quantity":${quantity}}`
-  let status
+    const action = "bank/withdraw"
+    const logString = `Withdrawal of ${quantity} ${item}`
+    const body = `{"code":"${item}","quantity":${quantity}}`
 
-  await requests.postAction(character, action, body)
-        .then(res => {
-          status = res.status
-          return res.json()
-        })
-        .then(async data => {
-          if(status === 200) {
-            console.log(`Withdrawal of ${quantity} ${item} complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s.`)
-            await delay(data.data.cooldown.total_seconds * 1000)
-          }
-          else
-            console.log(`Withdrawal of ${quantity} ${item} failed with status: ${status}.`)
-        })
-        //.catch((error) => console.log(error))
-
-    return status
+    return await requests.postRequest(character, action, logString, body)
 }
 
 async function withdrawAll(character, itemArray) {
-  for(const item of itemArray) {
-    await withdraw(character, item.code, item.quantity)
-  }
+    for(const item of itemArray) {
+      await withdraw(character, item.code, item.quantity)
+    }
 }
 
-function delay(delayInMs) {
-    return new Promise(resolve => setTimeout(resolve, delayInMs));
-};
-
-function inventoryTotal(charData) {
-    return charData.inventory.reduce((acc, slot) => slot.quantity + acc, 0)
-}
-
-export {getClosestTile, move, gather, craft, fight, deposit, depositAll, withdrawAll, delay, inventoryTotal}
+export {getCharInfo, getItemInfo, getAllMaps, getClosestTile, move, gather, craft, fight, deposit, depositAll, withdrawAll}
