@@ -37,9 +37,10 @@ async function getClosestTile(command, x, y) {
   let highestDistance = 17
 
   for(let i = 0; i < data.length; i++) {
-    currentDistance = Math.max(Math.abs(x - data[i].x),Math.abs( y - data[i].y))
+    currentDistance = Math.max(Math.abs(x - data[i].x),Math.abs(y - data[i].y))
     if(currentDistance < highestDistance) {
       closestIndex = i
+      highestDistance = currentDistance
     }
   }
 
