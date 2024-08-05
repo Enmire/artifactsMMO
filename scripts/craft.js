@@ -1,4 +1,5 @@
 import * as actions from './actions.js';
+import * as utils from './utils.js'
 
 const character = process.argv[2]
 const itemCode = process.argv[3]
