@@ -18,7 +18,9 @@ async function loop() {
           break;
         case 486:
           console.log(`${character} is locked. Action is already in progress.`)
-          return;
+          await utils.delay(5000)
+          loop()
+          break;
         case 493:
           console.log(`The resource is too high-level for ${character}.`);
           return;
@@ -35,7 +37,9 @@ async function loop() {
           return;
         case 499:
           console.log(`${character} is in cooldown.`);
-          return;
+          await utils.delay(5000)
+          loop()
+          break;
         case 598:
           console.log('Resource not found on this map.');
           return;

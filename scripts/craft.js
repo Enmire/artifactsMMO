@@ -23,7 +23,7 @@ async function loop() {
           console.log(`Total amount of ${itemCode} crafted: ${amountCrafted}`)
           await actions.move(character, bank.x, bank.y)
           await actions.depositAll(character)
-          if(amountCrafted > amountToCraft) {
+          if(amountCrafted >= amountToCraft) {
             console.log(`Crafted ${amountCrafted} ${itemCode}, which has reached the requested amount of ${amountToCraft}.`)
             return;
           }
@@ -39,7 +39,9 @@ async function loop() {
           return;
         case 486:
           console.log(`${character} is locked. Action is already in progress.`)
-          return;
+          await utils.delay(5000)
+          loop()
+          break;
         case 493:
           console.log(`The craft is too high-level for ${character}.`);
           return;
@@ -51,7 +53,9 @@ async function loop() {
           return;
         case 499:
           console.log(`${character} is in cooldown.`);
-          return;
+          await utils.delay(5000)
+          loop()
+          break;
         case 598:
           console.log('Workshop not found on this map.');
           return;
@@ -80,14 +84,14 @@ async function start() {
     await utils.delay(cooldown)
   }
 
-  // Calculate max craftable items per trip required items.
+  // Calculate max craftable items per trip.
   let totalItemsForCraft = 0
   itemInfo.item.craft.items.forEach(item => {
     totalItemsForCraft += item.quantity
   })
   craftablePerTrip = Math.floor(charData.inventory_max_items / totalItemsForCraft)
   
-  // Create array of total crafting materials for withdrawl.
+  // Create array of total crafting materials for withdrawal.
   itemInfo.item.craft.items.forEach(item => {
     materialsArray.push(
       {
@@ -102,7 +106,7 @@ async function start() {
     await actions.move(character, bank.x, bank.y)
   await actions.depositAll(character)
 
-  // Withdraw all required materials
+  // Withdraw all required materials.
   await actions.withdrawAll(character, materialsArray)
 
   // Move to crafting location.
