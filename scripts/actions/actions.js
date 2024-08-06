@@ -100,6 +100,12 @@ async function depositAll(character) {
     }
 }
 
+async function bankAndDepositAll(charData, bank) {
+  if(charData.x != bank.x || charData.y != bank.y)
+    await move(charData.name, bank.x, bank.y)
+  await depositAll(charData.name)
+}
+
 async function withdraw(character, item, quantity) {
     const action = "bank/withdraw"
     const logString = `Withdrawal of ${quantity} ${item}`
@@ -114,4 +120,17 @@ async function withdrawAll(character, itemArray) {
     }
 }
 
-export {getCharInfo, getItemInfo, getAllMaps, getClosestTile, move, gather, craft, fight, deposit, depositAll, withdrawAll}
+export {
+  getCharInfo,
+  getItemInfo,
+  getAllMaps,
+  getClosestTile,
+  move,
+  gather,
+  craft,
+  fight,
+  deposit,
+  depositAll,
+  bankAndDepositAll,
+  withdrawAll
+}

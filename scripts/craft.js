@@ -1,17 +1,17 @@
-import * as actions from './actions/actions.js';
+import * as actions from './actions/actions.js'
+import * as responseHandling from './actions/responsehandling.js'
 import * as utils from './utilities/utils.js'
 
 const character = process.argv[2]
 const itemCode = process.argv[3]
 let amountToCraft = process.argv[4]
-const bank = {"x": 4, "y": 1}
+let bank
 let itemInfo
 let craftTile
 let charData
 let craftablePerTrip
 let materialsArray = []
 let amountCrafted = 0
-console.log(character)
 
 async function loop() {
   console.log(`Attempting to craft ${itemCode}.`)
@@ -31,37 +31,9 @@ async function loop() {
           await actions.move(character, craftTile.x, craftTile.y)
           loop()
           break;
-        case 404:
-          console.log('Craft not found.')
-          return;
-        case 479:
-          console.log('Missing item or insufficient quantity in your inventory.')
-          return;
-        case 486:
-          console.log(`${character} is locked. Action is already in progress.`)
-          await utils.delay(5000)
-          loop()
-          break;
-        case 493:
-          console.log(`The craft is too high-level for ${character}.`);
-          return;
-        case 497:
-          console.log(`${character}'s inventory is full.`);
-          return;
-        case 498:
-          console.log(`${character} cannot be found on your account.`);
-          return;
-        case 499:
-          console.log(`${character} is in cooldown.`);
-          await utils.delay(5000)
-          loop()
-          break;
-        case 598:
-          console.log('Workshop not found on this map.');
-          return;
         default:
-          console.log(`An error with code ${status} occurred while crafting ${itemCode}.`);
-          return;
+          responseHandling.handle(character, status, loop)
+          break;
       }
     })
 }
@@ -72,11 +44,10 @@ async function start() {
     return
   }
 
-  amountToCraft = parseInt(amountToCraft)
-
-  itemInfo = await actions.getItemInfo(itemCode)
-  craftTile = await actions.getClosestTile(itemInfo.item.craft.skill, bank.x, bank.y)
   charData = await actions.getCharInfo(character)
+  itemInfo = await actions.getItemInfo(itemCode)
+  bank = await actions.getClosestTile("bank", charData.x, charData.y)
+  craftTile = await actions.getClosestTile(itemInfo.item.craft.skill, bank.x, bank.y)
   
   // Wait for character cooldown.
   console.log("Received character info, calculating cooldown.")
@@ -87,6 +58,7 @@ async function start() {
   }
 
   // Calculate max craftable items per trip.
+  amountToCraft = parseInt(amountToCraft)
   let totalItemsForCraft = 0
   itemInfo.item.craft.items.forEach(item => {
     totalItemsForCraft += item.quantity
@@ -108,9 +80,7 @@ async function start() {
   })
 
   // Deposit all inventory.
-  if(charData.x != bank.x || charData.y != bank.y)
-    await actions.move(character, bank.x, bank.y)
-  await actions.depositAll(character)
+  await actions.bankAndDepositAll(charData, bank)
 
   // Withdraw all required materials.
   await actions.withdrawAll(character, materialsArray)
