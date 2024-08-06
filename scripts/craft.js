@@ -1,9 +1,9 @@
-import * as actions from './actions.js';
-import * as utils from './utils.js'
+import * as actions from './actions/actions.js';
+import * as utils from './utilities/utils.js'
 
 const character = process.argv[2]
 const itemCode = process.argv[3]
-const amountToCraft = process.argv[4]
+let amountToCraft = process.argv[4]
 const bank = {"x": 4, "y": 1}
 let itemInfo
 let craftTile
@@ -72,6 +72,8 @@ async function start() {
     return
   }
 
+  amountToCraft = parseInt(amountToCraft)
+
   itemInfo = await actions.getItemInfo(itemCode)
   craftTile = await actions.getClosestTile(itemInfo.item.craft.skill, bank.x, bank.y)
   charData = await actions.getCharInfo(character)
@@ -90,6 +92,10 @@ async function start() {
     totalItemsForCraft += item.quantity
   })
   craftablePerTrip = Math.floor(charData.inventory_max_items / totalItemsForCraft)
+
+  // If the desired amount is less than the amount per trip, lower the amount per trip to the desired amount.
+  if(amountToCraft < craftablePerTrip)
+    craftablePerTrip = amountToCraft
   
   // Create array of total crafting materials for withdrawal.
   itemInfo.item.craft.items.forEach(item => {

@@ -1,5 +1,5 @@
-import * as actions from './actions.js'
-import * as utils from './utils.js'
+import * as actions from './actions/actions.js'
+import * as utils from './utilities/utils.js'
 
 const character = process.argv[2]
 const command = process.argv[3]

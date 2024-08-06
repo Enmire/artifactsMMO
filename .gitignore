@@ -1,5 +1,8 @@
 # Environment File
 *.env
 
+# Todo file
+todo.txt
+
 # Node Modules
 node_modules

@@ -1,4 +1,4 @@
-import * as utils from './utils.js'
+import * as utils from '../utilities/utils.js'
 
 const server = 'https://api.artifactsmmo.com';
 const headers = {
