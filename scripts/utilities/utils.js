@@ -42,8 +42,27 @@ function isInventoryFull(charData) {
   return inventoryTotal(charData) === charData.inventory_max_items
 }
 
+function isValidJson(str) {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function addTimestampsToConsoleLogs() {
+  console.log = (function() {
+    const console_log = console.log;
+    
+    return function() {
+      console_log.apply(console, [new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60 * 1000), ...arguments]);
+    };
+  })();
+}
+
 function delay(delayInMs) {
   return new Promise(resolve => setTimeout(resolve, delayInMs));
 };
 
-export {commandToCode, inventoryTotal, areSlotsAvailable, isInventoryFull, delay}
+export {commandToCode, inventoryTotal, areSlotsAvailable, isInventoryFull, isValidJson, addTimestampsToConsoleLogs, delay}

@@ -35,7 +35,7 @@ async function handle(charData, status, bank, actionTile, loop) {
       await actions.move(charData, actionTile.x, actionTile.y)
       loop()
       break;
-    case 486:
+    case 499:
       console.log(error_messages[status])
       console.log("Waiting 5s and retrying...")
       await utils.delay(5000)

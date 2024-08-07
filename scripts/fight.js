@@ -2,6 +2,8 @@ import * as actions from './actions/actions.js'
 import * as utils from './utilities/utils.js'
 import * as responseHandling from './actions/responsehandling.js'
 
+utils.addTimestampsToConsoleLogs()
+
 const character = process.argv[2]
 const command = process.argv[3]
 const charData = await actions.getCharData(character)
