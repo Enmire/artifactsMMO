@@ -1,8 +1,9 @@
 // Actions to be used by other scripts.
 import 'dotenv/config'
 import * as requests from './requests.js'
+import * as utils from '../utilities/utils.js'
 
-function getCharInfo(character) {
+function getCharData(character) {
   const url = `/characters/${character}`
 
   console.log(`Getting character info for ${character}.`)
@@ -47,22 +48,35 @@ async function getClosestTile(command, x, y) {
   return data[closestIndex]
 }
 
-async function move(character, x, y) {
+async function waitForCooldown(charData) {
+  const cooldown = new Date(charData.cooldown_expiration) - new Date()
+  if(cooldown > 0) {
+    console.log(`${charData.name} is on cooldown for ${cooldown/1000} seconds.`)
+    await utils.delay(cooldown)
+  }
+}
+
+async function move(charData, x, y) {
   const action = "move"
   const logString = `Move to ${x}, ${y}`
   const body = `{"x":${x},"y":${y}}`
 
-  return await requests.postRequest(character, action, logString, body)
+  if(charData.x == x && charData.y == y) {
+    console.log(`${charData.name} is already at ${x}, ${y}. No move needed.`)
+    return
+  }
+
+  return await requests.postRequest(charData.name, action, logString, body)
 }
 
-async function gather(character) {
+async function gather(charData) {
   const action = "gathering"
   const logString = "Gathering"
 
-  return await requests.postRequest(character, action, logString)
+  return await requests.postRequest(charData.name, action, logString)
 }
 
-async function craft(character, code, quantity) {
+async function craft(charData, code, quantity) {
   if(!code && !quantity)
     throw new Error("Craft must be passed code and quantity.");
 
@@ -70,65 +84,105 @@ async function craft(character, code, quantity) {
   const logString = "Crafting"
   const body = `{"code": "${code}", "quantity": ${quantity}}`
 
-  return await requests.postRequest(character, action, logString, body)
+  return await requests.postRequest(charData.name, action, logString, body)
 }
 
-async function fight(character) {
-    const action = "fight"
-    const logString = "Fighting"
+async function fight(charData) {
+  const action = "fight"
+  const logString = "Fighting"
 
-    return await requests.postRequest(character, action, logString)
+  return await requests.postRequest(charData.name, action, logString)
 }
 
-async function deposit(character, item, quantity) {
+async function acceptNewTask(charData) {
+  const action = "task/new"
+  const logString = "New task acceptance"
+
+  return await requests.postRequest(charData.name, action, logString)
+}
+
+async function completeTask(charData) {
+  const action = "task/complete"
+  const logString = "Task completion"
+
+  return await requests.postRequest(charData.name, action, logString)
+}
+
+async function exchangeTaskCoins(charData) {
+  const action = "task/exchange"
+  const logString = "Coin exchange"
+
+  return await requests.postRequest(charData.name, action, logString)
+}
+
+async function completeAndAcceptTask(charData, bank, taskMaster) {
+  // Incomplete Task
+  if(charData.task !== "" && charData.task_progress !== charData.task_total) {
+    console.log("Task is not complete and can't be turned in.")
+    return
+  }
+
+  // Complete Task
+  if(charData.task !== "" && charData.task_progress === charData.task_total) {
+    if(utils.areSlotsAvailable(charData, 2)) {
+      console.log("Less than two inventory slots available, depositing.")
+      await actions.bankAndDepositAll(charData, bank)
+    }
+  }
+
+  // Complete and No task
+  await move(charData, taskMaster.x, taskMaster.y)
+  await completeTask(charData)
+  await acceptNewTask(charData)
+}
+
+async function deposit(charData, item, quantity) {
     const action = "bank/deposit";
     const logString = `Deposit of ${quantity} ${item}`
     const body = `{"code":"${item}","quantity":${quantity}}`
 
-    return await requests.postRequest(character, action, logString, body)
+    return await requests.postRequest(charData.name, action, logString, body)
 }
 
-async function depositAll(character) {
-    const charData = await getCharInfo(character)
-    console.log("Character info for depositAll received.\n")
-
+async function depositAll(charData) {
     for(const slot of charData.inventory) {
       if(slot.quantity > 0) {
         console.log(`Depositing ${slot.code}...`)
-        await deposit(character, slot.code, slot.quantity)
+        await deposit(charData, slot.code, slot.quantity)
       }
     }
 }
 
 async function bankAndDepositAll(charData, bank) {
-  if(charData.x != bank.x || charData.y != bank.y)
-    await move(charData.name, bank.x, bank.y)
-  await depositAll(charData.name)
+  await move(charData, bank.x, bank.y)
+  await depositAll(charData)
 }
 
-async function withdraw(character, item, quantity) {
+async function withdraw(charData, item, quantity) {
     const action = "bank/withdraw"
     const logString = `Withdrawal of ${quantity} ${item}`
     const body = `{"code":"${item}","quantity":${quantity}}`
 
-    return await requests.postRequest(character, action, logString, body)
+    return await requests.postRequest(charData.name, action, logString, body)
 }
 
-async function withdrawAll(character, itemArray) {
+async function withdrawAll(charData, itemArray) {
     for(const item of itemArray) {
-      await withdraw(character, item.code, item.quantity)
+      await withdraw(charData, item.code, item.quantity)
     }
 }
 
 export {
-  getCharInfo,
+  getCharData,
   getItemInfo,
   getAllMaps,
   getClosestTile,
+  waitForCooldown,
   move,
   gather,
   craft,
   fight,
+  completeAndAcceptTask,
   deposit,
   depositAll,
   bankAndDepositAll,

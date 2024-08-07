@@ -16,7 +16,7 @@ const error_messages = {
   598: "Resource not found on this map."
 }
 
-async function handle(character, status, bank, actionTile, loop) {
+async function handle(charData, status, bank, actionTile, loop) {
   switch(status) {
     case 200:
       loop()
@@ -28,11 +28,11 @@ async function handle(character, status, bank, actionTile, loop) {
       loop()
       break;
     case 497:
-      console.log(`${character}'s inventory is full. Attempting to deposit...`);
+      console.log(`${charData.name}'s inventory is full. Attempting to deposit...`);
       await utils.delay(5000)
-      await actions.move(character, bank.x, bank.y);
-      await actions.depositAll(character);
-      await actions.move(character, actionTile.x, actionTile.y)
+      await actions.move(charData, bank.x, bank.y);
+      await actions.depositAll(charData);
+      await actions.move(charData, actionTile.x, actionTile.y)
       loop()
       break;
     case 486:
