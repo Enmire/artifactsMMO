@@ -34,8 +34,16 @@ function inventoryTotal(charData) {
   return charData.inventory.reduce((acc, slot) => slot.quantity + acc, 0)
 }
 
+function areSlotsAvailable(charData, slots) {
+  return inventoryTotal(charData) > charData.inventory_max_items - slots
+}
+
+function isInventoryFull(charData) {
+  return inventoryTotal(charData) === charData.inventory_max_items
+}
+
 function delay(delayInMs) {
   return new Promise(resolve => setTimeout(resolve, delayInMs));
 };
 
-export {commandToCode, inventoryTotal, delay}
+export {commandToCode, inventoryTotal, areSlotsAvailable, isInventoryFull, delay}
