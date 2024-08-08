@@ -6,46 +6,84 @@ const headers = {
   Accept: 'application/json',
   Authorization: 'Bearer ' + process.env.TOKEN
 }
+const getOptions = {
+  method: 'GET',
+  headers
+}
 
 async function getRequest (url) {
   url = `${server}${url}`
-  const options = {
-    method: 'GET',
-    headers
-  }
 
-  return await callWithRetry(fetch, [url, options])
-    .then(res => res.json())
-    .then(data => data.data)
+  return await callWithRetry(fetch, [url, getOptions])
+    .then(async res => {
+      let returnBody
+      if(res.status === 200) {
+        returnBody = await res.json().then(data => data.data)
+        console.log(`Request to ${url} complete. Status: ${res.status}.`)
+      }
+      else
+        console.log(`Request to ${url} failed. Status: ${res.status}.`)
+      return returnBody
+    })
     .catch((error) => console.log(error))
 }
 
-async function postRequest(character, action, logString, body) {
+async function getRequestPaged (url) {
+  //TODO: Refactor to be like getRequest
+  let returnData = []
+
+  url = new URL(`${server}${url}`)
+  url.searchParams.append("page", 1)
+  url.searchParams.append("size", 1)
+
+  const pages =  await callWithRetry(fetch, [url, getOptions])
+    .then(res => res.json())
+    .then(data => Math.ceil(data.total/100))
+    .catch((error) => console.log(error))
+
+  url.searchParams.set("size", 100)
+
+  for(let i = 1; i <= pages; i++) {
+    console.log(`Getting page: ${i}`)
+    url.searchParams.set("page", i)
+
+    await callWithRetry(fetch, [url, getOptions])
+      .then(res => res.json())
+      .then(data => returnData.push(...data.data))
+      .catch((error) => console.log(error))
+  }
+
+  console.log(returnData)
+
+  return returnData
+}
+
+async function postRequest(character, action, body) {
   const url = `${server}/my/${character}/action/${action}`
-  const options = {
+  const postOptions = {
     method: 'POST',
     headers,
     body
   };
   let status
+  let logString = `Request to ${url}`
 
-  console.log(`Sending ${action} request...`)
-  await callWithRetry(fetch, [url, options])
-    .then(res => {
+  if(body !== undefined)
+    logString += ` with body: ${body}`
+
+  return await callWithRetry(fetch, [url, postOptions])
+    .then(async res => {
       status = res.status
-      return res.json()
-    })
-    .then(async data => {
       if(status === 200) {
-        console.log(`${logString} complete with status of ${status}. Cooldown: ${data.data.cooldown.total_seconds}s.`)
-        await utils.delay(data.data.cooldown.total_seconds * 1000)
+        const cooldown = await res.json().then(data => data.data.cooldown.total_seconds)
+        console.log(`${logString} complete. Status: ${status}. Cooldown: ${cooldown}s.`)
+        await utils.delay(cooldown * 1000)
       }
       else
-        console.log(`${logString} failed with status: ${status}.`)
+        console.log(`${logString} failed. Status: ${status}.`)
+      return status
     })
     .catch((error) => console.log(error))
-
-  return status
 }
 
 async function callWithRetry(fn, args, retries = 0) {
@@ -62,4 +100,4 @@ async function callWithRetry(fn, args, retries = 0) {
     })
 }
 
-export {getRequest, postRequest}
+export {getRequest, getRequestPaged, postRequest}

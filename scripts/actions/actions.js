@@ -3,18 +3,37 @@ import 'dotenv/config'
 import * as requests from './requests.js'
 import * as utils from '../utilities/utils.js'
 
-function getCharData(character) {
+async function getCharData(character) {
   const url = `/characters/${character}`
 
-  console.log(`Getting character info for ${character}.`)
-  return requests.getRequest(url)
+  return await requests.getRequest(url)
 }
 
-function getItemInfo(itemCode) {
+async function getItemData(itemCode) {
   const url = `/items/${itemCode}`
 
-  console.log(`Getting item info for ${itemCode}.`)
-  return requests.getRequest(url)
+  return await requests.getRequest(url)
+}
+
+async function getBankItem(itemCode) {
+  const url = `/my/bank/items?item_code=${itemCode}`
+
+  const responseArray = await requests.getRequest(url)
+  if(responseArray === undefined) {
+    console.log(`Item ${itemCode} is not in bank.`)
+    return {
+      "code": itemCode,
+      "quantity": 0
+    }
+  }
+  return responseArray[0]
+}
+
+async function getAllBankItems() {
+  const url = "/my/bank/items"
+
+  console.log(`Getting all bank items.`)
+  return await requests.getRequestPaged(url)
 }
 
 function getAllMaps(contentCode,  contentType) {
@@ -58,22 +77,22 @@ async function waitForCooldown(charData) {
 
 async function move(charData, x, y) {
   const action = "move"
-  const logString = `Move to ${x}, ${y}`
   const body = `{"x":${x},"y":${y}}`
 
-  if(charData.x == x && charData.y == y) {
+  charData = await getCharData(charData.name)
+
+  if(charData.x === x && charData.y === y) {
     console.log(`${charData.name} is already at ${x}, ${y}. No move needed.`)
     return
   }
 
-  return await requests.postRequest(charData.name, action, logString, body)
+  return await requests.postRequest(charData.name, action, body)
 }
 
 async function gather(charData) {
   const action = "gathering"
-  const logString = "Gathering"
 
-  return await requests.postRequest(charData.name, action, logString)
+  return await requests.postRequest(charData.name, action,)
 }
 
 async function craft(charData, code, quantity) {
@@ -81,38 +100,27 @@ async function craft(charData, code, quantity) {
     throw new Error("Craft must be passed code and quantity.");
 
   const action = "crafting"
-  const logString = "Crafting"
   const body = `{"code": "${code}", "quantity": ${quantity}}`
 
-  return await requests.postRequest(charData.name, action, logString, body)
+  return await requests.postRequest(charData.name, action, body)
 }
 
 async function fight(charData) {
   const action = "fight"
-  const logString = "Fighting"
 
-  return await requests.postRequest(charData.name, action, logString)
+  return await requests.postRequest(charData.name, action)
 }
 
 async function acceptNewTask(charData) {
   const action = "task/new"
-  const logString = "New task acceptance"
 
-  return await requests.postRequest(charData.name, action, logString)
+  return await requests.postRequest(charData.name, action)
 }
 
 async function completeTask(charData) {
   const action = "task/complete"
-  const logString = "Task completion"
 
-  return await requests.postRequest(charData.name, action, logString)
-}
-
-async function exchangeTaskCoins(charData) {
-  const action = "task/exchange"
-  const logString = "Coin exchange"
-
-  return await requests.postRequest(charData.name, action, logString)
+  return await requests.postRequest(charData.name, action)
 }
 
 async function completeAndAcceptTask(charData, bank, taskMaster) {
@@ -136,34 +144,52 @@ async function completeAndAcceptTask(charData, bank, taskMaster) {
   await acceptNewTask(charData)
 }
 
+async function exchangeTaskCoins(charData) {
+  const action = "task/exchange"
+
+  return await requests.postRequest(charData.name, action)
+}
+
 async function deposit(charData, item, quantity) {
-    const action = "bank/deposit";
-    const logString = `Deposit of ${quantity} ${item}`
+    const action = "bank/deposit"
     const body = `{"code":"${item}","quantity":${quantity}}`
 
-    return await requests.postRequest(charData.name, action, logString, body)
+    return await requests.postRequest(charData.name, action, body)
+}
+
+async function depositGold(charData, quantity) {
+  const action = "bank/deposit/gold"
+  const body = `{"quantity":${quantity}}`
+
+  if(charData.gold > 0)
+    return await requests.postRequest(charData.name, action, body)
+  else
+    return 200
 }
 
 async function depositAll(charData) {
+  charData = await getCharData(charData.name)
     for(const slot of charData.inventory) {
-      if(slot.quantity > 0) {
-        console.log(`Depositing ${slot.code}...`)
+      if(slot.quantity > 0)
         await deposit(charData, slot.code, slot.quantity)
-      }
     }
+}
+
+async function depositAllGold(charData) {
+  await depositGold(charData, charData.gold)
 }
 
 async function bankAndDepositAll(charData, bank) {
   await move(charData, bank.x, bank.y)
   await depositAll(charData)
+  await depositAllGold(charData)
 }
 
 async function withdraw(charData, item, quantity) {
     const action = "bank/withdraw"
-    const logString = `Withdrawal of ${quantity} ${item}`
     const body = `{"code":"${item}","quantity":${quantity}}`
 
-    return await requests.postRequest(charData.name, action, logString, body)
+    return await requests.postRequest(charData.name, action, body)
 }
 
 async function withdrawAll(charData, itemArray) {
@@ -174,7 +200,9 @@ async function withdrawAll(charData, itemArray) {
 
 export {
   getCharData,
-  getItemInfo,
+  getItemData,
+  getBankItem,
+  getAllBankItems,
   getAllMaps,
   getClosestTile,
   waitForCooldown,
@@ -183,8 +211,12 @@ export {
   craft,
   fight,
   completeAndAcceptTask,
+  exchangeTaskCoins,
   deposit,
+  depositGold,
   depositAll,
+  depositAllGold,
   bankAndDepositAll,
+  withdraw,
   withdrawAll
 }
