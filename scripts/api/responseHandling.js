@@ -30,9 +30,9 @@ async function handle(charData, status, bank, actionTile, loop) {
     case 497:
       console.log(`${charData.name}'s inventory is full. Attempting to deposit...`);
       await utils.delay(5000)
-      await actions.move(charData, bank.x, bank.y);
+      await actions.move(charData, bank);
       await actions.depositAll(charData);
-      await actions.move(charData, actionTile.x, actionTile.y)
+      await actions.move(charData, actionTile)
       loop()
       break;
     case 499:
