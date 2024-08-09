@@ -1,14 +1,15 @@
-import * as actions from './actions/actions.js'
+import * as actions from './api/actions.js'
+import * as data from './api/data.js'
+import * as responseHandling from './api/responsehandling.js'
 import * as utils from './utilities/utils.js'
-import * as responseHandling from './actions/responsehandling.js'
 
 utils.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
 const command = process.argv[3]
-const charData = await actions.getCharData(character)
-const bank = await actions.getClosestTile("bank", charData.x, charData.y)
-const actionTile = await actions.getClosestTile(utils.commandToCode(command), bank.x, bank.y)
+const charData = await data.getCharData(character)
+const bank = await data.getClosestTile("bank", charData.x, charData.y)
+const actionTile = await data.getClosestTile(utils.commandToCode(command), bank.x, bank.y)
 
 async function loop() {
   actions.gather(charData)
@@ -23,7 +24,7 @@ async function start() {
     await actions.bankAndDepositAll(charData, bank)
   }
 
-  await actions.move(charData, actionTile.x, actionTile.y)
+  await actions.move(charData, actionTile)
 
   console.log("Starting gathering...")
   loop()

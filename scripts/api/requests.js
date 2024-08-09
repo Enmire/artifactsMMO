@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import * as utils from '../utilities/utils.js'
 
 const server = 'https://api.artifactsmmo.com';
@@ -52,8 +53,6 @@ async function getRequestPaged (url) {
       .then(data => returnData.push(...data.data))
       .catch((error) => console.log(error))
   }
-
-  console.log(returnData)
 
   return returnData
 }

@@ -42,6 +42,14 @@ function isInventoryFull(charData) {
   return inventoryTotal(charData) === charData.inventory_max_items
 }
 
+function maxCraftable(charData, itemData) {
+  let totalMaterials = 0
+  itemData.item.craft.items.forEach(item => {
+    totalMaterials += item.quantity
+  })
+  return Math.floor(charData.inventory_max_items / totalMaterials)
+}
+
 function isValidJson(str) {
   try {
     JSON.parse(str);
@@ -65,4 +73,13 @@ function delay(delayInMs) {
   return new Promise(resolve => setTimeout(resolve, delayInMs));
 };
 
-export {commandToCode, inventoryTotal, areSlotsAvailable, isInventoryFull, isValidJson, addTimestampsToConsoleLogs, delay}
+export {
+  commandToCode,
+  inventoryTotal,
+  areSlotsAvailable,
+  isInventoryFull,
+  maxCraftable,
+  isValidJson,
+  addTimestampsToConsoleLogs,
+  delay
+}

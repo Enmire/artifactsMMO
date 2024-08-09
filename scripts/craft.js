@@ -1,16 +1,17 @@
-import * as actions from './actions/actions.js'
+import * as actions from './api/actions.js'
+import * as data from './api/data.js'
+import * as responseHandling from './api/responsehandling.js'
 import * as utils from './utilities/utils.js'
-import * as responseHandling from './actions/responsehandling.js'
 
 utils.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
 const itemCode = process.argv[3]
 const amountToCraft = parseInt(process.argv[4])
-const charData = await actions.getCharData(character)
-const bank = await actions.getClosestTile("bank", charData.x, charData.y)
-const itemData = await actions.getItemData(itemCode)
-const craftTile = await actions.getClosestTile(itemData.item.craft.skill, bank.x, bank.y)
+const charData = await data.getCharData(character)
+const bank = await data.getClosestTile("bank", charData.x, charData.y)
+const itemData = await data.getItemData(itemCode)
+const craftTile = await data.getClosestTile(itemData.item.craft.skill, bank.x, bank.y)
 let craftablePerTrip
 let materialsArray = []
 let amountCrafted = 0
@@ -22,7 +23,7 @@ async function loop() {
         case 200:
           amountCrafted += craftablePerTrip
           console.log(`Total amount of ${itemCode} crafted: ${amountCrafted}`)
-          await actions.move(charData, bank.x, bank.y)
+          await actions.move(charData, bank)
           await actions.depositAll(charData)
           // Return if we've reach the desired amount to craft.
           if(amountCrafted >= amountToCraft) {
@@ -40,7 +41,7 @@ async function loop() {
             })
           }
           await actions.withdrawAll(charData, materialsArray)
-          await actions.move(charData, craftTile.x, craftTile.y)
+          await actions.move(charData, craftTile)
           loop()
           break;
         default:
@@ -60,11 +61,7 @@ async function start() {
   await actions.waitForCooldown(charData)
 
   // Calculate max craftable items per trip.
-  let totalItemsForCraft = 0
-  itemData.item.craft.items.forEach(item => {
-    totalItemsForCraft += item.quantity
-  })
-  craftablePerTrip = Math.floor(charData.inventory_max_items / totalItemsForCraft)
+  craftablePerTrip = utils.maxCraftable(charData, itemData)
 
   // If the desired amount is less than the amount per trip, lower the amount per trip to the desired amount.
   if(amountToCraft < craftablePerTrip)
@@ -87,7 +84,7 @@ async function start() {
   await actions.withdrawAll(charData, materialsArray)
 
   // Move to crafting location.
-  await actions.move(charData, craftTile.x, craftTile.y)
+  await actions.move(charData, craftTile)
 
   console.log("Starting crafting...")
   loop()
