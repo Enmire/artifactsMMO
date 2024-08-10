@@ -40,6 +40,16 @@ async function craft(charData, code, quantity) {
   return await requests.postRequest(charData.name, action, body)
 }
 
+async function recycle(charData, code, quantity) {
+  if(!code && !quantity)
+    throw new Error("Recycle must be passed code and quantity.");
+
+  const action = "recycling"
+  const body = `{"code": "${code}", "quantity": ${quantity}}`
+
+  return await requests.postRequest(charData.name, action, body)
+}
+
 async function fight(charData) {
   const action = "fight"
 
@@ -138,6 +148,7 @@ export {
   move,
   gather,
   craft,
+  recycle,
   fight,
   completeAndAcceptTask,
   exchangeTaskCoins,

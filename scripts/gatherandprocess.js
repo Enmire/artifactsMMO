@@ -9,8 +9,8 @@ const character = process.argv[2]
 const itemCode = process.argv[3]
 const charData = await data.getCharData(character)
 const itemData = await data.getItemData(itemCode)
-const bank = await data.getClosestTile("bank", charData.x, charData.y)
-const craftTile = await data.getClosestTile(itemData.item.craft.skill, bank.x, bank.y)
+const bank = await data.getClosestTile("bank", charData)
+const craftTile = await data.getClosestTile(itemData.item.craft.skill, bank)
 const maxCraftable = utils.maxCraftable(charData, itemData)
 let gatherData = []
 
@@ -38,11 +38,10 @@ async function loop() {
                 await actions.move(charData, gatherData[inProgressIndex + 1].tile)
               }
             }
-            console.log(gatherData)
             loop()
             break;
           default:
-            responseHandling.handle(charData, status, loop)
+            responseHandling.handle(charData, status, loop())
             break;
         }
       })
@@ -57,24 +56,18 @@ async function loop() {
 
     for(let i = 0; i < items.length; i++) {
       const resource = (await data.getResourceData(items[i].code))[0]
-      console.log(resource)
       const resourceTile = (await data.getAllMaps(resource.code))[0]
-      console.log(resourceTile)
       const gatherObject = {
         itemCode: items[i].code,
         tile: resourceTile,
         needed: items[i].quantity * maxCraftable,
         gathered: 0
       }
-      console.log(gatherObject)
       gatherData.push(gatherObject)
     }
-
-    console.log(gatherData)
   
     await actions.move(charData, gatherData[0].tile)
 
-  
     console.log("Starting gather and process...")
     loop()
   }

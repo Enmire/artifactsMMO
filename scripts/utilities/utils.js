@@ -42,12 +42,25 @@ function isInventoryFull(charData) {
   return inventoryTotal(charData) === charData.inventory_max_items
 }
 
-function maxCraftable(charData, itemData) {
+function materialsPerItem(itemData) {
   let totalMaterials = 0
   itemData.item.craft.items.forEach(item => {
     totalMaterials += item.quantity
   })
-  return Math.floor(charData.inventory_max_items / totalMaterials)
+
+  return totalMaterials
+}
+
+function maxCraftable(charData, itemData) {
+  return Math.floor(charData.inventory_max_items / materialsPerItem(itemData))
+}
+
+function recycledPerItem(itemData) {
+  return 1 + Math.floor((materialsPerItem(itemData) - 1) / 5)
+}
+
+function maxRecyclable(charData, itemData) {
+  return Math.floor(charData.inventory_max_items / recycledPerItem(itemData))
 }
 
 function isValidJson(str) {
@@ -79,6 +92,7 @@ export {
   areSlotsAvailable,
   isInventoryFull,
   maxCraftable,
+  maxRecyclable,
   isValidJson,
   addTimestampsToConsoleLogs,
   delay

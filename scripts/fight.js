@@ -8,12 +8,12 @@ utils.addTimestampsToConsoleLogs()
 const character = process.argv[2]
 const command = process.argv[3]
 const charData = await data.getCharData(character)
-const bank = await data.getClosestTile("bank", charData.x, charData.y)
-const actionTile = await data.getClosestTile(command, bank.x, bank.y)
+const bank = await data.getClosestTile("bank", charData)
+const actionTile = await data.getClosestTile(command, bank)
 
 async function loop() {
   actions.fight(charData)
-    .then(async status => responseHandling.handle(charData, status, bank, actionTile, loop))
+    .then(async status => responseHandling.handle(charData, status, bank, actionTile, loop()))
 }
 
 async function start() {
