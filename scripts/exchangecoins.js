@@ -8,8 +8,8 @@ utils.addTimestampsToConsoleLogs()
 const character = process.argv[2]
 const itemCode = "tasks_coin"
 const charData = await data.getCharData(character)
-const bank = await data.getClosestTile("bank", charData.x, charData.y)
-const taskMaster = await data.getClosestTile("monsters", charData.x, charData.y)
+const bank = await data.getClosestTile("bank", charData)
+const taskMaster = await data.getClosestTile("monsters", charData)
 let bankCoinData
 
 async function withdrawCoins() {
@@ -36,7 +36,7 @@ async function loop() {
           loop()
           break;
         default:
-          responseHandling.handle(charData, status, bank, taskMaster, loop)
+          responseHandling.handle(charData, status, bank, taskMaster, loop())
           break;
       }
     })

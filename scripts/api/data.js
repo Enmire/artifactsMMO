@@ -66,14 +66,14 @@ function getAllMaps(contentCode,  contentType) {
   return requests.getRequest(url)
 }
 
-async function getClosestTile(command, x, y) {
+async function getClosestTile(command, tile) {
   const data = await getAllMaps(command)
   let closestIndex
   let currentDistance
   let highestDistance = Number.MAX_SAFE_INTEGER
 
   for(let i = 0; i < data.length; i++) {
-    currentDistance = Math.abs(x - data[i].x) + Math.abs(y - data[i].y)
+    currentDistance = Math.abs(tile.x - data[i].x) + Math.abs(tile.y - data[i].y)
     if(currentDistance < highestDistance) {
       closestIndex = i
       highestDistance = currentDistance

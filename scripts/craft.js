@@ -9,9 +9,9 @@ const character = process.argv[2]
 const itemCode = process.argv[3]
 const amountToCraft = parseInt(process.argv[4])
 const charData = await data.getCharData(character)
-const bank = await data.getClosestTile("bank", charData.x, charData.y)
+const bank = await data.getClosestTile("bank", charData)
 const itemData = await data.getItemData(itemCode)
-const craftTile = await data.getClosestTile(itemData.item.craft.skill, bank.x, bank.y)
+const craftTile = await data.getClosestTile(itemData.item.craft.skill, bank)
 let craftablePerTrip
 let materialsArray = []
 let amountCrafted = 0
@@ -45,7 +45,7 @@ async function loop() {
           loop()
           break;
         default:
-          responseHandling.handle(charData, status, loop)
+          responseHandling.handle(charData, status)
           break;
       }
     })
