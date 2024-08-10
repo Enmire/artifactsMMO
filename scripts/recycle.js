@@ -2,8 +2,9 @@ import * as actions from './api/actions.js'
 import * as data from './api/data.js'
 import * as responseHandling from './api/responsehandling.js'
 import * as utils from './utilities/utils.js'
+import * as logger from './utilities/logsettings.js'
 
-utils.addTimestampsToConsoleLogs()
+logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
 const itemCode = process.argv[3]
@@ -16,14 +17,13 @@ let maxRecyclable
 let amountRecycled = 0
 
 async function loop() {
-  actions.recycle(charData, itemCode, maxRecyclable)
+  actions.recycle(character, itemCode, maxRecyclable)
     .then(async (status) => {
       switch(status) {
         case 200:
           amountRecycled += maxRecyclable
           console.log(`Total amount of ${itemCode} recycled: ${amountRecycled}`)
-          await actions.move(charData, bank)
-          await actions.depositAll(charData)
+          await actions.bankAndDepositAllItems(character)
 
           // Return if we've reach the desired amount to recycle.
           if(amountRecycled >= amountToRecycle) {
@@ -35,12 +35,12 @@ async function loop() {
           if((amountToRecycle - amountRecycled) < maxRecyclable)
             maxRecyclable = amountToRecycle - amountRecycled
 
-          await actions.withdraw(charData, itemCode, maxRecyclable)
-          await actions.move(charData, recycleTile)
+          await actions.withdrawItem(character, itemCode, maxRecyclable)
+          await actions.move(character, recycleTile)
           loop()
           break;
         default:
-          responseHandling.handle(charData, status, loop())
+          responseHandling.handle(character, status, loop)
           break;
       }
     })
@@ -59,18 +59,18 @@ async function start() {
 
   recycleTile = await data.getClosestTile(itemData.item.craft.skill, bank)
   
-  await actions.waitForCooldown(charData)
+  await actions.waitForCooldown(character)
 
-  await actions.bankAndDepositAll(charData, bank)
+  await actions.bankAndDepositAllItems(character)
 
   maxRecyclable = utils.maxRecyclable(charData, itemData)
 
   if(amountToRecycle < maxRecyclable)
     maxRecyclable = amountToRecycle
 
-  await actions.withdraw(charData, itemCode, maxRecyclable)
+  await actions.withdrawItem(character, itemCode, maxRecyclable)
 
-  await actions.move(charData, recycleTile)
+  await actions.move(character, recycleTile)
 
   console.log("Starting recycling...")
   loop()

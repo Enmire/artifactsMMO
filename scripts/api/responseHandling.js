@@ -1,5 +1,4 @@
 import * as actions from './actions.js'
-import * as utils from '../utilities/utils.js'
 
 const error_messages = {
   404: "Item not found.",
@@ -16,7 +15,7 @@ const error_messages = {
   598: "Resource not found on this map."
 }
 
-async function handle(charData, status, bank, actionTile, loop) {
+async function handle(character, status, loop, actionTile) {
   switch(status) {
     case 200:
       loop()
@@ -24,21 +23,20 @@ async function handle(charData, status, bank, actionTile, loop) {
     case 486:
       console.log(error_messages[status])
       console.log("Waiting 5s and retrying...")
-      await utils.delay(5000)
+      await actions.waitSeconds(5)
       loop()
       break;
     case 497:
-      console.log(`${charData.name}'s inventory is full. Attempting to deposit...`);
-      await utils.delay(5000)
-      await actions.move(charData, bank);
-      await actions.depositAll(charData);
-      await actions.move(charData, actionTile)
+      console.log(`${character}'s inventory is full. Attempting to deposit...`);
+      await actions.waitSeconds(5)
+      await actions.bankAndDepositAllItems(character)
+      await actions.move(character, actionTile)
       loop()
       break;
     case 499:
       console.log(error_messages[status])
       console.log("Waiting 5s and retrying...")
-      await utils.delay(5000)
+      await actions.waitSeconds(5)
       loop()
       break;
     default:
