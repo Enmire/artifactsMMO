@@ -51,8 +51,22 @@ function materialsPerItem(itemData) {
   return totalMaterials
 }
 
-function maxCraftable(charData, itemData) {
+function maxCraftablePerInventory(charData, itemData) {
   return Math.floor(charData.inventory_max_items / materialsPerItem(itemData))
+}
+
+function totalCraftableInItemArray(itemArray, itemData) {
+  let amountCraftablePerMaterial = []
+
+  itemData.item.craft.items.forEach(item => {
+      const filteredInventory = itemArray.filter(slot => item.code === slot.code)
+      if(filteredInventory.length > 0)
+          amountCraftablePerMaterial.push(Math.floor(filteredInventory[0].quantity / item.quantity))
+      else
+          amountCraftablePerMaterial.push(0)
+  })
+
+  return Math.min(...amountCraftablePerMaterial)
 }
 
 function recycledPerItem(itemData) {
@@ -72,16 +86,6 @@ function isValidJson(str) {
   }
 }
 
-function addTimestampsToConsoleLogs() {
-  console.log = (function() {
-    const console_log = console.log;
-    
-    return function() {
-      console_log.apply(console, [new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60 * 1000), ...arguments]);
-    };
-  })();
-}
-
 function delay(delayInMs) {
   return new Promise(resolve => setTimeout(resolve, delayInMs));
 };
@@ -91,9 +95,9 @@ export {
   inventoryTotal,
   areSlotsAvailable,
   isInventoryFull,
-  maxCraftable,
+  maxCraftablePerInventory,
+  totalCraftableInItemArray,
   maxRecyclable,
   isValidJson,
-  addTimestampsToConsoleLogs,
   delay
 }

@@ -1,62 +1,43 @@
 import * as actions from './api/actions.js'
 import * as data from './api/data.js'
 import * as responseHandling from './api/responsehandling.js'
-import * as utils from './utilities/utils.js'
+import * as logger from './utilities/logsettings.js'
 
-utils.addTimestampsToConsoleLogs()
+logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
-const itemCode = "tasks_coin"
-const charData = await data.getCharData(character)
-const bank = await data.getClosestTile("bank", charData)
-const taskMaster = await data.getClosestTile("monsters", charData)
-let bankCoinData
-
-async function withdrawCoins() {
-  if(bankCoinData.quantity < charData.inventory_max_items)
-    await actions.withdraw(charData, itemCode, bankCoinData.quantity - bankCoinData.quantity % 3)
-  else
-    await actions.withdraw(charData, itemCode, charData.inventory_max_items - charData.inventory_max_items % 3)
-}
+const taskMaster = await data.getClosestTile("monsters", {"x": 0, "y":0})
 
 async function loop() {
-  actions.exchangeTaskCoins(charData)
+  actions.exchangeTaskCoins(character)
     .then(async (status) => {
       switch(status) {
         case 478:
-          await actions.move(charData, bank)
-          await actions.depositAll(charData)
-          bankCoinData = await data.getBankItem(itemCode)
-          if(bankCoinData.quantity < 3) {
-            console.log("Finished exchanging task coins.")
+          await actions.bankAndDepositAllItems(character)
+          const shouldExit = await actions.withdrawTaskCoins(character)
+          if(shouldExit) {
+            console.log("Not enough task coins to exchange.")
             return
           }
-          await withdrawCoins()
-          await actions.move(charData, taskMaster)
+          await actions.move(character, taskMaster)
           loop()
           break;
         default:
-          responseHandling.handle(charData, status, bank, taskMaster, loop())
+          responseHandling.handle(character, status, loop, taskMaster)
           break;
       }
     })
 }
 
 async function start() {
-  await actions.waitForCooldown(charData)
-  await actions.bankAndDepositAll(charData, bank)
-
-  bankCoinData = await data.getBankItem(itemCode)
-  
-  if(bankCoinData.quantity < 3) {
+  await actions.waitForCooldown(character)
+  await actions.bankAndDepositAllItems(character)
+  const shouldExit = await actions.withdrawTaskCoins(character)
+  if(shouldExit) {
     console.log("Not enough task coins to exchange.")
     return
   }
-  
-  await withdrawCoins()
-
-  await actions.move(charData, taskMaster)
-
+  await actions.move(character, taskMaster)
   console.log("Starting coin exchange...")
   loop()
 }

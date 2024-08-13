@@ -8,21 +8,20 @@ logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
 const itemCode = process.argv[3]
-const amountToCraft = parseInt(process.argv[4])
 const charData = await data.getCharData(character)
 const bank = await data.getClosestTile("bank", charData)
 const itemData = await data.getItemData(itemCode)
 const craftTile = await data.getClosestTile(itemData.item.craft.skill, bank)
-let craftablePerTrip
+let maxCraftable
 let materialsArray = []
 let amountCrafted = 0
 
 async function loop() {
-  actions.craft(character, itemCode, craftablePerTrip)
+  actions.craft(character, itemCode, maxCraftable)
     .then(async (status) => {
       switch(status) {
         case 200:
-          amountCrafted += craftablePerTrip
+          amountCrafted += maxCraftable
           console.log(`Total amount of ${itemCode} crafted: ${amountCrafted}`)
           await actions.bankAndDepositAllItems(character)
           // Return if we've reach the desired amount to craft.
@@ -31,12 +30,12 @@ async function loop() {
             return;
           }
           // Update the materials array and amount to craft if there are less remaining than the maximum craftable amount.
-          if((amountToCraft - amountCrafted) < craftablePerTrip) {
-            craftablePerTrip = amountToCraft - amountCrafted
+          if((amountToCraft - amountCrafted) < maxCraftable) {
+            maxCraftable = amountToCraft - amountCrafted
             materialsArray = itemData.item.craft.items.map(item => {
               return {
                 code: item.code,
-                quantity: item.quantity * craftablePerTrip
+                quantity: item.quantity * maxCraftable
               }
             })
           }
@@ -52,8 +51,8 @@ async function loop() {
 }
 
 async function start() {
-  if(process.argv[4] === undefined || !(process.argv[5] === undefined)) {
-    console.log('Command must be in the format of "node <script> <character> <itemCode> <amountToCraft>"')
+  if(process.argv[3] === undefined || !(process.argv[4] === undefined)) {
+    console.log('Command must be in the format of "node <script> <character> <itemCode>"')
     return
   }
   
@@ -61,18 +60,14 @@ async function start() {
   await actions.waitForCooldown(character)
 
   // Calculate max craftable items per trip.
-  craftablePerTrip = utils.maxCraftablePerInventory(charData, itemData)
-
-  // If the desired amount is less than the amount per trip, lower the amount per trip to the desired amount.
-  if(amountToCraft < craftablePerTrip)
-    craftablePerTrip = amountToCraft
+  maxCraftable = utils.maxCraftablePerInventory(charData, itemData)
   
   // Create array of total crafting materials for withdrawal.
   itemData.item.craft.items.forEach(item => {
     materialsArray.push(
       {
         "code": item.code,
-        "quantity": item.quantity * craftablePerTrip
+        "quantity": item.quantity * maxCraftable
       }
     )
   })

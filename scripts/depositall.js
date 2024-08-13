@@ -1,15 +1,15 @@
 import * as actions from './api/actions.js'
 import * as data from './api/data.js'
-import * as utils from './utilities/utils.js'
+import * as logger from './utilities/logsettings.js'
 
-utils.addTimestampsToConsoleLogs()
+logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
 const charData = await data.getCharData(character)
 const bank = await data.getClosestTile("bank", charData)
 
-await actions.waitForCooldown(charData)
+await actions.waitForCooldown(character)
 
-await actions.bankAndDepositAll(charData, bank)
+await actions.bankAndDepositAllItems(character)
 
 console.log("Deposit all complete.")
