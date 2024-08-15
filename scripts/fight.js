@@ -12,8 +12,8 @@ const actionTile = await data.getClosestTile(command, bank)
 
 async function loop() {
   actions.fight(character)
-    .then(async (status) => {
-      switch(status) {
+    .then(async res => {
+      switch(res.status) {
         case 497:
           console.log(`${character}'s inventory is full. Attempting to deposit...`);
           await actions.waitSeconds(5)
@@ -23,7 +23,7 @@ async function loop() {
           loop()
           break;
         default:
-          responseHandling.handle(character, status, loop, actionTile)
+          responseHandling.handle(character, res.status, loop, actionTile)
           break;
       }
     })

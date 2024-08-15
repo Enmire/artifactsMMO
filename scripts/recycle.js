@@ -18,8 +18,8 @@ let amountRecycled = 0
 
 async function loop() {
   actions.recycle(character, itemCode, maxRecyclable)
-    .then(async (status) => {
-      switch(status) {
+    .then(async res => {
+      switch(res.status) {
         case 200:
           amountRecycled += maxRecyclable
           console.log(`Total amount of ${itemCode} recycled: ${amountRecycled}`)
@@ -40,7 +40,7 @@ async function loop() {
           loop()
           break;
         default:
-          responseHandling.handle(character, status, loop)
+          responseHandling.handle(character, res.status, loop)
           break;
       }
     })
