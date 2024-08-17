@@ -1,5 +1,5 @@
-import * as actions from './api/actions.js'
-import * as data from './api/data.js'
+import * as requests from './api/requests.js'
+import * as actions from './actions/actions.js'
 import * as responseHandling from './api/responsehandling.js'
 import * as utils from './utilities/utils.js'
 import * as logger from './utilities/logsettings.js'
@@ -9,15 +9,15 @@ logger.addTimestampsToConsoleLogs()
 const character = process.argv[2]
 const itemCode = process.argv[3]
 const amountToRecycle = parseInt(process.argv[4])
-const charData = await data.getCharData(character)
-const bank = await data.getClosestTile("bank", charData)
-const itemData = await data.getItemData(itemCode)
+const charData = await requests.getCharData(character)
+const bank = await requests.getClosestTile("bank", charData)
+const itemData = await requests.getItemData(itemCode)
 let recycleTile
 let maxRecyclable
 let amountRecycled = 0
 
 async function loop() {
-  actions.recycle(character, itemCode, maxRecyclable)
+  requests.recycle(character, itemCode, maxRecyclable)
     .then(async res => {
       switch(res.status) {
         case 200:
@@ -35,7 +35,7 @@ async function loop() {
           if((amountToRecycle - amountRecycled) < maxRecyclable)
             maxRecyclable = amountToRecycle - amountRecycled
 
-          await actions.withdrawItem(character, itemCode, maxRecyclable)
+          await requests.withdrawItem(character, itemCode, maxRecyclable)
           await actions.move(character, recycleTile)
           loop()
           break;
@@ -57,7 +57,7 @@ async function start() {
     return
   }
 
-  recycleTile = await data.getClosestTile(itemData.item.craft.skill, bank)
+  recycleTile = await requests.getClosestTile(itemData.item.craft.skill, bank)
   
   await actions.waitForCooldown(character)
 
@@ -68,7 +68,7 @@ async function start() {
   if(amountToRecycle < maxRecyclable)
     maxRecyclable = amountToRecycle
 
-  await actions.withdrawItem(character, itemCode, maxRecyclable)
+  await requests.withdrawItem(character, itemCode, maxRecyclable)
 
   await actions.move(character, recycleTile)
 

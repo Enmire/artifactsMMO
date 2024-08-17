@@ -1,4 +1,4 @@
-// For functions that assist in making actions.
+// For functions that assist in making requests.
 function commandToCode(command) {
   switch(command) {
     case "ash":

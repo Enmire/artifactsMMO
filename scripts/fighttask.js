@@ -1,25 +1,25 @@
-import * as actions from './api/actions.js'
-import * as data from './api/data.js'
+import * as requests from './api/requests.js'
+import * as actions from './actions/actions.js'
 import * as responseHandling from './api/responsehandling.js'
 import * as logger from './utilities/logsettings.js'
 
 logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
-const bank = await data.getClosestTile("bank", {"x": 0, "y":0})
+const bank = await requests.getClosestTile("bank", {"x": 0, "y":0})
 let charData
 let actionTile
 
 async function loop() {
-  charData = await data.getCharData(character)
+  charData = await requests.getCharData(character)
   if(charData.task_progress === charData.task_total) {
     await actions.completeAndAcceptTask(character)
-    charData = await data.getCharData(character)
-    actionTile = await data.getClosestTile(charData.task, bank)
+    charData = await requests.getCharData(character)
+    actionTile = await requests.getClosestTile(charData.task, bank)
     await actions.move(character, actionTile)
   }
 
-  actions.fight(character)
+  requests.fight(character)
     .then(async res => {
       switch(res.status) {
         case 497:
@@ -44,9 +44,9 @@ async function start() {
 
   await actions.completeAndAcceptTask(character)
 
-  const charData = await data.getCharData(character)
+  const charData = await requests.getCharData(character)
 
-  actionTile = await data.getClosestTile(charData.task, bank)
+  actionTile = await requests.getClosestTile(charData.task, bank)
   
   await actions.move(character, actionTile)
 

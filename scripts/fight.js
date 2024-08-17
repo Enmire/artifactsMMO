@@ -1,5 +1,5 @@
-import * as actions from './api/actions.js'
-import * as data from './api/data.js'
+import * as requests from './api/requests.js'
+import * as actions from './actions/actions.js'
 import * as responseHandling from './api/responsehandling.js'
 import * as logger from './utilities/logsettings.js'
 
@@ -7,11 +7,11 @@ logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
 const command = process.argv[3]
-const bank = await data.getClosestTile("bank", {"x": 0, "y":0})
-const actionTile = await data.getClosestTile(command, bank)
+const bank = await requests.getClosestTile("bank", {"x": 0, "y":0})
+const actionTile = await requests.getClosestTile(command, bank)
 
 async function loop() {
-  actions.fight(character)
+  requests.fight(character)
     .then(async res => {
       switch(res.status) {
         case 497:

@@ -1,5 +1,5 @@
-import * as actions from './api/actions.js'
-import * as data from './api/data.js'
+import * as requests from './api/requests.js'
+import * as actions from './actions/actions.js'
 import * as responseHandling from './api/responsehandling.js'
 import * as utils from './utilities/utils.js'
 import * as logger from './utilities/logsettings.js'
@@ -9,16 +9,16 @@ logger.addTimestampsToConsoleLogs()
 const character = process.argv[2]
 const itemCode = process.argv[3]
 const amountToCraft = parseInt(process.argv[4])
-const charData = await data.getCharData(character)
-const bank = await data.getClosestTile("bank", charData)
-const itemData = await data.getItemData(itemCode)
-const craftTile = await data.getClosestTile(itemData.item.craft.skill, bank)
+const charData = await requests.getCharData(character)
+const bank = await requests.getClosestTile("bank", charData)
+const itemData = await requests.getItemData(itemCode)
+const craftTile = await requests.getClosestTile(itemData.item.craft.skill, bank)
 let craftablePerTrip
 let materialsArray = []
 let amountCrafted = 0
 
 async function loop() {
-  actions.craft(character, itemCode, craftablePerTrip)
+  requests.craft(character, itemCode, craftablePerTrip)
     .then(async res => {
       switch(res.status) {
         case 200:

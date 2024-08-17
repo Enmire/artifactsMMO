@@ -1,5 +1,5 @@
-import * as actions from './api/actions.js'
-import * as data from './api/data.js'
+import * as requests from './api/requests.js'
+import * as actions from './actions/actions.js'
 import * as responseHandling from './api/responsehandling.js'
 import * as utils from './utilities/utils.js'
 import * as logger from './utilities/logsettings.js'
@@ -8,15 +8,15 @@ logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
 const itemCode = process.argv[3]
-const charData = await data.getCharData(character)
-const itemData = await data.getItemData(itemCode)
-const bank = await data.getClosestTile("bank", charData)
-const craftTile = await data.getClosestTile(itemData.item.craft.skill, bank)
+const charData = await requests.getCharData(character)
+const itemData = await requests.getItemData(itemCode)
+const bank = await requests.getClosestTile("bank", charData)
+const craftTile = await requests.getClosestTile(itemData.item.craft.skill, bank)
 const maxCraftable = utils.maxCraftablePerInventory(charData, itemData)
 let gatherData = []
 
 async function loop() {
-  actions.gather(character)
+  requests.gather(character)
     .then(async res => {
       switch(res.status) {
         case 200:
@@ -29,7 +29,7 @@ async function loop() {
           if(gatherData[inProgressIndex].gathered === gatherData[inProgressIndex].needed) {
             if(inProgressIndex === gatherData.length - 1) {
               await actions.move(character, craftTile)
-              await actions.craft(character, itemCode, maxCraftable)
+              await requests.craft(character, itemCode, maxCraftable)
               await actions.bankAndDepositAllItems(character)
               await actions.move(character, gatherData[0].tile)
               for(const tracker of gatherData)
@@ -54,8 +54,8 @@ async function start() {
   await actions.bankAndDepositAllItems(character)
 
   for(const item of itemData.item.craft.items) {
-    const resource = (await data.getResourceData(item.code))[0]
-    const resourceTile = (await data.getAllMaps(resource.code))[0]
+    const resource = await requests.getFirstResourceDataByDrop(item.code)
+    const resourceTile = await requests.getFirstTileByCode(resource.code)
     const gatherObject = {
       itemCode: item.code,
       tile: resourceTile,
