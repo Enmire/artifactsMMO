@@ -10,8 +10,8 @@ const taskMaster = await data.getClosestTile("monsters", {"x": 0, "y":0})
 
 async function loop() {
   actions.exchangeTaskCoins(character)
-    .then(async (status) => {
-      switch(status) {
+    .then(async res => {
+      switch(res.status) {
         case 478:
           await actions.bankAndDepositAllItems(character)
           const shouldExit = await actions.withdrawTaskCoins(character)
@@ -23,7 +23,7 @@ async function loop() {
           loop()
           break;
         default:
-          responseHandling.handle(character, status, loop, taskMaster)
+          responseHandling.handle(character, res.status, loop, taskMaster)
           break;
       }
     })

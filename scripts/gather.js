@@ -14,7 +14,7 @@ const actionTile = await data.getClosestTile(utils.commandToCode(command), bank)
 
 async function loop() {
   actions.gather(character)
-    .then(async status => responseHandling.handle(character, status, loop, actionTile))
+    .then(async res => responseHandling.handle(character, res.status, loop, actionTile))
 }
 
 async function start() {

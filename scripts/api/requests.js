@@ -64,7 +64,6 @@ async function postRequest(character, action, body) {
     headers,
     body
   };
-  let status
   let logString = `Request to ${url}`
 
   if(body !== undefined)
@@ -72,15 +71,17 @@ async function postRequest(character, action, body) {
 
   return await callWithRetry(fetch, [url, postOptions])
     .then(async res => {
-      status = res.status
+      const status = res.status
+      let body
       if(status === 200) {
-        const cooldown = await res.json().then(data => data.data.cooldown.total_seconds)
+        body = await res.json()
+        const cooldown = body.data.cooldown.total_seconds
         console.log(`${logString} complete. Status: ${status}. Cooldown: ${cooldown}s.`)
         await utils.delay(cooldown * 1000)
       }
       else
         console.log(`${logString} failed. Status: ${status}.`)
-      return status
+      return {status, body}
     })
     .catch((error) => console.log(error))
 }

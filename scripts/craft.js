@@ -19,8 +19,8 @@ let amountCrafted = 0
 
 async function loop() {
   actions.craft(character, itemCode, craftablePerTrip)
-    .then(async (status) => {
-      switch(status) {
+    .then(async res => {
+      switch(res.status) {
         case 200:
           amountCrafted += craftablePerTrip
           console.log(`Total amount of ${itemCode} crafted: ${amountCrafted}`)
@@ -45,7 +45,7 @@ async function loop() {
           loop()
           break;
         default:
-          responseHandling.handle(character, status)
+          responseHandling.handle(character, res.status, loop)
           break;
       }
     })

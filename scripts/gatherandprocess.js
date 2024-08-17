@@ -17,8 +17,8 @@ let gatherData = []
 
 async function loop() {
   actions.gather(character)
-    .then(async (status) => {
-      switch(status) {
+    .then(async res => {
+      switch(res.status) {
         case 200:
           let inProgressIndex = 0
           while(inProgressIndex < gatherData.length && gatherData[inProgressIndex].gathered >= gatherData[inProgressIndex].needed)
@@ -42,7 +42,7 @@ async function loop() {
           loop()
           break;
         default:
-          responseHandling.handle(character, status, loop)
+          responseHandling.handle(character, res.status, loop)
           break;
       }
     })
