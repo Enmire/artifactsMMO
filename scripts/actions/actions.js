@@ -1,87 +1,161 @@
 import * as requests from '../api/requests.js'
 import * as utils from '../utilities/utils.js'
 
-async function waitForCooldown(character) {
-  const charData = await requests.getCharData(character)
+async function waitForCooldown(character, charData) {
+  if(charData === undefined)
+    charData = await requests.getCharData(character)
   const cooldown = new Date(charData.cooldown_expiration) - new Date()
   if(cooldown > 0) {
     console.log(`${charData.name} is on cooldown for ${cooldown/1000} seconds.`)
     await utils.delay(cooldown)
   }
+  return {data: {character: charData}}
 }
 
-async function move(character, tile) {
-  const charData = await requests.getCharData(character)
+async function move(character, tile, charData) {
+  if(charData === undefined)
+    charData = await requests.getCharData(character)
 
-  if(charData.x === tile.x && charData.y === tile.y) {
-    console.log(`${character} is already at ${tile.x}, ${tile.y}. No move needed.`)
-    return
+  if(charData.x === tile.x && charData.y === tile.y)
+    return {data: {character: charData}}
+
+  return await requests.moveRequest(character, tile)
+}
+
+async function equipItemsFromBank(character, itemArray, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
+  returnData = await bankAndDepositInventory(character, returnData.data.character)
+
+  let itemDataArray = []
+  for(const item of itemArray) {
+    const data = await requests.getItemData(item)
+    itemDataArray.push(data)
   }
 
-  return await requests.moveRequest(character, action, body)
+  const equipInfo = utils.equipmentToSlotArray(returnData.data.character, itemDataArray)
+
+  console.log(equipInfo)
+
+  if(equipInfo.filter(item => item.slot.includes("consumable")).length > 0)
+    returnData = await unequipAndDepositAllConsumables(character, returnData.data.character)
+
+  for(const item of equipInfo) {
+    if(returnData.data.character[`${item.slot}_slot`] !== "") {
+      returnData = await requests.unequipRequest(character, item.slot)
+      returnData = await depositAllItems(character, returnData.data.character)
+    }
+    if(item.slot.includes("consumable"))
+      returnData = await requests.withdrawItem(character, item.code, returnData.data.character.inventory_max_items)
+    else
+      returnData = await requests.withdrawItem(character, item.code, 1)
+    returnData = await requests.equipRequest(character, item.code, item.slot)
+  }
+
+  return returnData
 }
 
-async function completeAndAcceptTask(character) {
-  const charData = await requests.getCharData(character)
+async function completeAndAcceptTask(character, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
   const taskMaster = await requests.getFirstTileByCode("monsters")
 
   // Incomplete Task
-  if(charData.task !== "" && charData.task_progress !== charData.task_total) {
+  if(returnData.data.character.task !== "" && returnData.data.character.task_progress !== returnData.data.character.task_total) {
     console.log("Task is not complete and can't be turned in.")
-    return
+    return returnData
   }
 
   // Complete Task
-  if(charData.task !== "" && charData.task_progress === charData.task_total) {
-    if(utils.areSlotsAvailable(charData, 2)) {
+  if(returnData.data.character.task !== "" && returnData.data.character.task_progress === returnData.data.character.task_total) {
+    if(utils.areSlotsAvailable(returnData.data.character, 2)) {
       console.log("Less than two inventory slots available, depositing.")
-      await bankAndDepositAllItems(character)
+      returnData = await bankAndDepositInventory(character)
     }
   }
 
-  await move(character, taskMaster)
+  await move(character, taskMaster, returnData.data.character)
   await requests.completeTask(character)
-  await requests.acceptTask(character)
+  return await requests.acceptTask(character)
 }
 
-async function depositAllItems(character) {
-  const charData = await requests.getCharData(character)
-    for(const slot of charData.inventory) {
-      if(slot.quantity > 0)
-        await requests.depositItem(character, slot.code, slot.quantity)
-    }
+async function depositAllItems(character, charData) {
+  let returnData = {data: {character: charData}}
+
+  if(charData === undefined) {
+    charData = await requests.getCharData(character)
+    returnData.data.character = charData
+  }
+
+  for(const slot of charData.inventory) {
+    if(slot.quantity > 0)
+      returnData = await requests.depositItem(character, slot.code, slot.quantity)
+  }
+
+  return returnData
 }
 
-async function bankAndDepositAllItems(character) {
+async function bankAndDepositInventory(character, charData) {
+  if(charData === undefined)
+    charData = await requests.getCharData(character)
   const bank = await requests.getFirstTileByCode("bank")
-  await move(character, bank)
-  await depositAllItems(character)
+  const response = await move(character, bank, charData)
+  return await depositAllItems(character, response.data.character)
 }
 
+async function depositAllItemsIfInventoryIsFull(character, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
 
-async function depositAllItemsIfInventoryIsFull(character) {
-  const charData = await requests.getCharData(character)
-  if(utils.isInventoryFull(charData))
-    await bankAndDepositAllItems(character)
+  if(utils.isInventoryFull(returnData.data.character)) 
+    return await bankAndDepositInventory(character, returnData.data.character)
+
+  return returnData
 }
 
-async function depositAllGold(character) {
-  const charData = await requests.getCharData(character)
-  if(charData.gold > 0)
-    await requests.depositGold(character, charData.gold)
-  else
-    console.log("No gold to deposit.")
+async function depositAllGold(character, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
+  if(returnData.data.character.gold > 0)
+    return await requests.depositGold(character, charData.gold)
+  
+  console.log("No gold to deposit.")
+  return returnData
 }  
 
-async function withdrawAllItems(character, itemArray) {
+async function withdrawAllItems(character, itemArray, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
+  let bankData = await requests.getAllBankItems()
+
   for(const item of itemArray) {
-    await requests.withdrawItem(character, item.code, item.quantity)
+    const bankItem = utils.firstElement(bankData.filter(bankItem => bankItem.code === item.code))
+    if(bankItem !== null && bankItem.quantity >= item.quantity) {
+      returnData = await requests.withdrawItem(character, item.code, item.quantity)
+      bankData = returnData.data.bank
+    }
+    else
+      console.log(`Not enough ${item.code} in bank. Bank data: ${bankItem}`)
   }
+
+  return returnData
 }
 
-async function withdrawTaskCoins(character) {
+async function withdrawTaskCoins(character, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
   const itemCode = "tasks_coin"
-  const charData = await requests.getCharData(character)
   const bankCoinData = await requests.getBankItem(itemCode)
 
   if(bankCoinData.quantity < 3)
@@ -93,18 +167,84 @@ async function withdrawTaskCoins(character) {
     await requests.withdrawItem(character, itemCode, charData.inventory_max_items - charData.inventory_max_items % 3)
 }
 
+async function unequipAndDepositRings(character, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
+  returnData = await bankAndDepositInventory()
+
+  if(returnData.data.character.ring1_slot !== "")
+    returnData = await requests.unequipRequest(character, "ring1_slot")
+
+  if(returnData.data.character.ring2_slot !== "")
+    returnData = await requests.unequipRequest(character, "ring2_slot")
+
+  returnData = await bankAndDepositInventory()
+
+  return returnData
+}
+
+async function unequipAndDepositAllConsumables(character, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
+  let currentInventory = utils.inventoryTotal(returnData.data.character)
+
+  if(currentInventory + returnData.data.character.consumable1_slot_quantity > returnData.data.character.inventory_max_items)
+    returnData = await bankAndDepositInventory(character, returnData.data.character)
+
+  if(returnData.data.character.consumable1_slot !== "")
+    returnData = await requests.unequipRequest(character, "consumable1")
+
+  currentInventory = utils.inventoryTotal(returnData.data.character)
+
+  if(currentInventory + returnData.data.character.consumable2_slot_quantity > returnData.data.character.inventory_max_items)
+    returnData = await bankAndDepositInventory(character, returnData.data.character)
+
+  if(returnData.data.character.consumable2_slot !== "")
+    returnData = await requests.unequipRequest(character, "consumable1")
+
+  returnData = await bankAndDepositInventory(character, returnData.data.character)
+
+  return returnData
+}
+
+async function withdrawAndEquipBassIfNeeded(character, bassAmount, charData) {
+  let returnData = {data: {character: charData}}
+
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
+  const slot = utils.consumableSlotEquipped(returnData.data.character, "cooked_bass")
+
+  if(slot !== null && returnData.data.character[`${slot}_slot_quantity`] >= bassAmount)
+    return returnData
+
+  returnData = await bankAndDepositInventory(character, returnData.data.character)
+
+  returnData = await unequipAndDepositAllConsumables(character, returnData.data.character)
+
+  returnData = await withdrawAllItems(character, [{"code":"cooked_bass","quantity":returnData.data.character.inventory_max_items}], returnData.data.character)
+  return await requests.equipRequest(character, "cooked_bass", "consumable1")
+}
+
 async function waitSeconds(timeInSeconds) {
   await utils.delay(timeInSeconds * 1000)
 }
 
 export {
   move,
+  equipItemsFromBank,
   waitForCooldown,
   completeAndAcceptTask,
-  bankAndDepositAllItems,
+  bankAndDepositInventory,
   depositAllItemsIfInventoryIsFull,
   depositAllGold,
   withdrawAllItems,
   withdrawTaskCoins,
+  unequipAndDepositAllConsumables,
+  withdrawAndEquipBassIfNeeded,
   waitSeconds
 }

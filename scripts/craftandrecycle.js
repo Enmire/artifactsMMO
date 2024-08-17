@@ -1,6 +1,6 @@
 import * as requests from './api/requests.js'
 import * as actions from './actions/actions.js'
-import * as responseHandling from './api/responsehandling.js'
+import * as defaultHandler from './api/defaulthandler.js'
 import * as utils from './utilities/utils.js'
 import * as logger from './utilities/logsettings.js'
 
@@ -23,7 +23,7 @@ async function loop() {
         case 200:
           amountCrafted += maxCraftable
           console.log(`Total amount of ${itemCode} crafted: ${amountCrafted}`)
-          await actions.bankAndDepositAllItems(character)
+          await actions.bankAndDepositInventory(character)
           // Return if we've reach the desired amount to craft.
           if(amountCrafted >= amountToCraft) {
             console.log(`Crafted ${amountCrafted} ${itemCode}, which has reached the requested amount of ${amountToCraft}.`)
@@ -44,7 +44,7 @@ async function loop() {
           loop()
           break;
         default:
-          responseHandling.handle(character, res.status, loop)
+          defaultHandler.handle(character, res.status, loop)
           break;
       }
     })
@@ -73,7 +73,7 @@ async function start() {
   })
 
   // Deposit all inventory.
-  await actions.bankAndDepositAllItems(character)
+  await actions.bankAndDepositInventory(character)
 
   // Withdraw all required materials.
   await actions.withdrawAllItems(character, materialsArray)

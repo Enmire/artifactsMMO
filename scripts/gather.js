@@ -1,6 +1,6 @@
 import * as requests from './api/requests.js'
 import * as actions from './actions/actions.js'
-import * as responseHandling from './api/responsehandling.js'
+import * as defaultHandler from './api/defaulthandler.js'
 import * as utils from './utilities/utils.js'
 import * as logger from './utilities/logsettings.js'
 
@@ -13,7 +13,7 @@ const actionTile = await requests.getClosestTile(utils.commandToCode(command), b
 
 async function loop() {
   requests.gather(character)
-    .then(async res => responseHandling.handle(character, res.status, loop, actionTile))
+    .then(async res => defaultHandler.handle(character, res.status, loop, actionTile))
 }
 
 async function start() {

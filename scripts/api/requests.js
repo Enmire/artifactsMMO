@@ -15,14 +15,12 @@ async function getItemData(itemCode) {
 async function getAllItemData() {
   const url = "/items"
 
-  console.log("Getting all item requests.")
   return await controller.getRequestPaged(url)
 }
 
 async function getResourceDataByDrop(itemCode) {
   const url = `/resources/?drop=${itemCode}`
 
-  console.log(`Getting resource data for ${itemCode}.`)
   return await controller.getRequestPaged(url)
 }
 
@@ -56,6 +54,12 @@ async function getAllBankItems() {
 
   console.log(`Getting all bank items.`)
   return await controller.getRequestPaged(url)
+}
+
+async function getBankItems(itemArray) {
+  const bankData = await getAllBankItems()
+  const codeArray = itemArray.map(item => item.code)
+  return bankData.filter(bankItem => codeArray.includes(bankItem.code))
 }
 
 function getAllMapsByCode(contentCode) {
@@ -114,7 +118,7 @@ async function moveRequest(character, tile) {
 async function equipRequest(character, itemCode, slot) {
   // Allowed slot values: weapon, shield, helmet, body_armor, leg_armor, boots, ring1, ring2, amulet, artifact1, artifact2, artifact3, consumable1, consumable2
   const action = "equip"
-  const body = `{"code":${itemCode},"slot":${slot}}`
+  const body = `{"code":"${itemCode}","slot":"${slot}"}`
 
   return await controller.postRequest(character, action, body)
 }
@@ -122,7 +126,7 @@ async function equipRequest(character, itemCode, slot) {
 async function unequipRequest(character, slot) {
   // Allowed slot values: weapon, shield, helmet, body_armor, leg_armor, boots, ring1, ring2, amulet, artifact1, artifact2, artifact3, consumable1, consumable2
   const action = "unequip"
-  const body = `{"slot":${slot}}`
+  const body = `{"slot":"${slot}"}`
 
   return await controller.postRequest(character, action, body)
 }
@@ -140,11 +144,11 @@ async function gather(character) {
 }
 
 async function craft(character, itemCode, quantity) {
-  if(!code && !quantity)
-    throw new Error("Craft must be passed code and quantity.");
+  if(!itemCode && !quantity)
+    throw new Error("Craft must be passed code and quantity.")
 
   const action = "crafting"
-  const body = `{"code": "${itemCode}", "quantity": ${quantity}}`
+  const body = `{"code": "${itemCode}","quantity": ${quantity}}`
 
   return await controller.postRequest(character, action, body)
 }
@@ -168,7 +172,7 @@ async function recycle(character, itemCode, quantity) {
     throw new Error("Recycle must be passed code and quantity.");
 
   const action = "recycling"
-  const body = `{"code": "${itemCode}", "quantity": ${quantity}}`
+  const body = `{"code":"${itemCode}","quantity":${quantity}}`
 
   return await controller.postRequest(character, action, body)
 }
@@ -234,6 +238,7 @@ export {
   getFirstResourceDataByDrop,
   getBankItem,
   getAllBankItems,
+  getBankItems,
   getAllMapsByCode,
   getAllMapsByType,
   getFirstTileByCode,
