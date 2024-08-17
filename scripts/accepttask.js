@@ -1,5 +1,4 @@
-import * as actions from './api/actions.js'
-import * as data from './api/data.js'
+import * as actions from './actions/actions.js'
 import * as logger from './utilities/logsettings.js'
 
 logger.addTimestampsToConsoleLogs()

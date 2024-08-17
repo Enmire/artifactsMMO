@@ -1,15 +1,15 @@
-import * as actions from './api/actions.js'
-import * as data from './api/data.js'
+import * as requests from './api/requests.js'
+import * as actions from './actions/actions.js'
 import * as responseHandling from './api/responsehandling.js'
 import * as logger from './utilities/logsettings.js'
 
 logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
-const taskMaster = await data.getClosestTile("monsters", {"x": 0, "y":0})
+const taskMaster = await requests.getClosestTile("monsters", {"x": 0, "y":0})
 
 async function loop() {
-  actions.exchangeTaskCoins(character)
+  requests.exchangeTaskCoins(character)
     .then(async res => {
       switch(res.status) {
         case 478:

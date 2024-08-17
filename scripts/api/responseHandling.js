@@ -1,4 +1,4 @@
-import * as actions from './actions.js'
+import * as actions from '../actions/actions.js'
 
 const error_messages = {
   404: "Item not found.",
