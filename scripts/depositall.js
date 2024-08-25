@@ -7,6 +7,6 @@ const character = process.argv[2]
 
 await actions.waitForCooldown(character)
 
-await actions.bankAndDepositAllItems(character)
+await actions.bankAndDepositInventory(character)
 
 console.log("Deposit all complete.")

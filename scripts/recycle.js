@@ -1,6 +1,6 @@
 import * as requests from './api/requests.js'
 import * as actions from './actions/actions.js'
-import * as responseHandling from './api/responsehandling.js'
+import * as defaultHandler from './api/defaulthandler.js'
 import * as utils from './utilities/utils.js'
 import * as logger from './utilities/logsettings.js'
 
@@ -23,7 +23,7 @@ async function loop() {
         case 200:
           amountRecycled += maxRecyclable
           console.log(`Total amount of ${itemCode} recycled: ${amountRecycled}`)
-          await actions.bankAndDepositAllItems(character)
+          await actions.bankAndDepositInventory(character)
 
           // Return if we've reach the desired amount to recycle.
           if(amountRecycled >= amountToRecycle) {
@@ -40,7 +40,7 @@ async function loop() {
           loop()
           break;
         default:
-          responseHandling.handle(character, res.status, loop)
+          defaultHandler.handle(character, res.status, loop)
           break;
       }
     })
@@ -61,7 +61,7 @@ async function start() {
   
   await actions.waitForCooldown(character)
 
-  await actions.bankAndDepositAllItems(character)
+  await actions.bankAndDepositInventory(character)
 
   maxRecyclable = utils.maxRecyclable(charData, itemData)
 

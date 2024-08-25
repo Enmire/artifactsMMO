@@ -16,6 +16,7 @@ const error_messages = {
 }
 
 async function handle(character, status, loop, actionTile) {
+  let response
   switch(status) {
     case 200:
       loop()
@@ -29,8 +30,8 @@ async function handle(character, status, loop, actionTile) {
     case 497:
       console.log(`${character}'s inventory is full. Attempting to deposit...`);
       await actions.waitSeconds(5)
-      await actions.bankAndDepositAllItems(character)
-      await actions.move(character, actionTile)
+      response = await actions.bankAndDepositInventory(character)
+      await actions.move(character, actionTile, response.data.character)
       loop()
       break;
     case 499:

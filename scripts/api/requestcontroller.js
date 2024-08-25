@@ -17,14 +17,14 @@ async function getRequest (url) {
 
   return await callWithRetry(fetch, [url, getOptions])
     .then(async res => {
-      let returnBody
+      let returnData
       if(res.status === 200) {
-        returnBody = await res.json().then(data => data.data)
+        returnData = await res.json().then(data => data.data)
         console.log(`Request to ${url} complete. Status: ${res.status}.`)
       }
       else
         console.log(`Request to ${url} failed. Status: ${res.status}.`)
-      return returnBody
+      return returnData
     })
     .catch((error) => console.log(error))
 }
@@ -82,10 +82,12 @@ async function postRequest(character, action, body) {
         const cooldown = body.data.cooldown.total_seconds
         console.log(`${logString} complete. Status: ${status}. Cooldown: ${cooldown}s.`)
         await utils.delay(cooldown * 1000)
+        return {status, data: body.data}
       }
-      else
+      else {
         console.log(`${logString} failed. Status: ${status}.`)
-      return {status, body}
+        return {status}
+      }
     })
     .catch((error) => console.log(error))
 }

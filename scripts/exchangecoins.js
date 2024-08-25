@@ -1,43 +1,45 @@
 import * as requests from './api/requests.js'
 import * as actions from './actions/actions.js'
-import * as responseHandling from './api/responsehandling.js'
+import * as defaultHandler from './api/defaulthandler.js'
 import * as logger from './utilities/logsettings.js'
 
 logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
-const taskMaster = await requests.getClosestTile("monsters", {"x": 0, "y":0})
+const taskMaster = await requests.getFirstTileByCode("monsters")
+let response
 
 async function loop() {
   requests.exchangeTaskCoins(character)
     .then(async res => {
-      switch(res.status) {
+      response = res
+      switch(response.status) {
         case 478:
-          await actions.bankAndDepositAllItems(character)
-          const shouldExit = await actions.withdrawTaskCoins(character)
+          response = await actions.bankAndDepositInventory(character)
+          const shouldExit = await actions.withdrawTaskCoins(character, response.data.character)
           if(shouldExit) {
             console.log("Not enough task coins to exchange.")
             return
           }
-          await actions.move(character, taskMaster)
+          response = await actions.move(character, taskMaster, response.data.character)
           loop()
           break;
         default:
-          responseHandling.handle(character, res.status, loop, taskMaster)
+          defaultHandler.handle(character, res.status, loop, taskMaster)
           break;
       }
     })
 }
 
 async function start() {
-  await actions.waitForCooldown(character)
-  await actions.bankAndDepositAllItems(character)
-  const shouldExit = await actions.withdrawTaskCoins(character)
+  response = await actions.waitForCooldown(character)
+  response = await actions.bankAndDepositInventory(character, response.data.character)
+  const shouldExit = await actions.withdrawTaskCoins(character, response.data.character)
   if(shouldExit) {
     console.log("Not enough task coins to exchange.")
     return
   }
-  await actions.move(character, taskMaster)
+  response = await actions.move(character, taskMaster, response.data.character)
   console.log("Starting coin exchange...")
   loop()
 }
