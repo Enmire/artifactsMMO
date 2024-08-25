@@ -9,6 +9,8 @@ function commandToCode(command) {
       return "birch_tree"
     case "dead":
       return "dead_tree"
+    case "magic":
+      return "magic_tree"
     case "copper":
       return "copper_rocks"
     case "iron":
@@ -92,7 +94,6 @@ function equipmentToSlotArray(charData, itemDataArray) {
   const ringEquipment = itemDataArray.filter(itemData => itemData.item.type === "ring")
   const consumableEquipment = itemDataArray.filter(itemData => itemData.item.type === "consumable")
   const artifactEquipment = itemDataArray.filter(itemData => itemData.item.type === "artifact")
-  console.log(ringEquipment)
 
   let singleSlotEquipmentSet = new Set()
   singleSlotEquipment.forEach(itemData => {
@@ -116,12 +117,9 @@ function equipmentToSlotArray(charData, itemDataArray) {
   })
   
   const ringEquipmentCodes = ringEquipment.map(itemData => itemData.item.code)
-  console.log(ringEquipmentCodes)
 
   if(ringEquipmentCodes.length === 1 && charData.ring1_slot !== ringEquipmentCodes[0] && charData.ring2_slot !== ringEquipmentCodes[0])
     returnData.push({code: ringEquipmentCodes[0], slot: "ring1_slot"})
-
-
 
   if(ringEquipment.length === 2) {
     const equippedRingCodes = [charData.ring1_slot, charData.ring2_slot]
@@ -162,6 +160,18 @@ function equipmentToSlotArray(charData, itemDataArray) {
   return returnData
 }
 
+function sortTools(gatherType) {
+  return function(toolA, toolB) {
+    const toolAValue = toolA.effects.filter(effect => effect.name === gatherType)[0].value
+    const toolBValue = toolB.effects.filter(effect => effect.name === gatherType)[0].value
+    return Math.abs(toolBValue) - Math.abs(toolAValue)
+  }
+}
+
+function sortResourcesByLevel(resourceA, resourceB) {
+  return resourceB.level - resourceA.level
+}
+
 function isValidJson(str) {
   try {
     JSON.parse(str);
@@ -191,6 +201,8 @@ export {
   maxRecyclable,
   consumableSlotEquipped,
   equipmentToSlotArray,
+  sortTools,
+  sortResourcesByLevel,
   isValidJson,
   firstElement,
   delay

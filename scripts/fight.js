@@ -7,8 +7,9 @@ logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
 const command = process.argv[3]
-const bank = await requests.getFirstTileByCode("bank")
-const actionTile = await requests.getClosestTile(command, bank)
+let bank
+let fightTile
+let requiredSlots
 let response
 
 async function loop() {
@@ -16,25 +17,27 @@ async function loop() {
     .then(async res => {
       response = res
       switch(response.status) {
-        case 497:
-          console.log(`${character}'s inventory is full. Attempting to deposit...`);
-          await actions.waitSeconds(5)
-          response = await actions.bankAndDepositInventory(character, response.data.character)
-          response = await actions.depositAllGold(character, response.data.character)
-          response = await actions.move(character, actionTile, response.data.character)
+        case 200:
+          response = await actions.bankAndDepositIfLessSlots(character, requiredSlots, response.data.character)
+          response = await actions.move(character, fightTile, response.data.character)
           loop()
           break;
         default:
-          defaultHandler.handle(character, res.status, loop, actionTile)
+          defaultHandler.handle(character, res.status, loop, fightTile)
           break;
       }
     })
 }
 
 async function start() {
+  const bankFightPair = await requests.getClosestBankAndTile(command)
+  bank = bankFightPair.bank
+  fightTile = bankFightPair.contentTile
+  const monsterData = await requests.getMonsterData(command)
+  requiredSlots = monsterData.drops.length
   response = await actions.waitForCooldown(character)
-  response = await actions.depositAllItemsIfInventoryIsFull(character, response.data.character)
-  response = await actions.move(character, actionTile, response.data.character)
+  response = await actions.bankAndDepositIfLessSlots(character, requiredSlots, response.data.character)
+  response = await actions.move(character, fightTile, response.data.character)
 
   console.log("Starting fighting...")
   loop()

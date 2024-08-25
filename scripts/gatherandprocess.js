@@ -10,8 +10,7 @@ const character = process.argv[2]
 const itemCode = process.argv[3]
 const charData = await requests.getCharData(character)
 const itemData = await requests.getItemData(itemCode)
-const bank = await requests.getClosestTile("bank", charData)
-const craftTile = await requests.getClosestTile(itemData.item.craft.skill, bank)
+const craftTile = await requests.getFirstTileByCode(itemData.item.craft.skill)
 const maxCraftable = utils.maxCraftablePerInventory(charData, itemData)
 let gatherData = []
 
@@ -30,7 +29,7 @@ async function loop() {
             if(inProgressIndex === gatherData.length - 1) {
               await actions.move(character, craftTile)
               await requests.craft(character, itemCode, maxCraftable)
-              await actions.bankAndDepositInventory(character)
+              await actions.bankAndDeposit(character)
               await actions.move(character, gatherData[0].tile)
               for(const tracker of gatherData)
                 tracker.gathered = 0
@@ -51,7 +50,7 @@ async function loop() {
 async function start() {
   await actions.waitForCooldown(character)
 
-  await actions.bankAndDepositInventory(character)
+  await actions.bankAndDeposit(character)
 
   for(const item of itemData.item.craft.items) {
     const resource = await requests.getFirstResourceDataByDrop(item.code)

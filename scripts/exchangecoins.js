@@ -14,8 +14,11 @@ async function loop() {
     .then(async res => {
       response = res
       switch(response.status) {
+        case 200:
+          loop()
+          break;
         case 478:
-          response = await actions.bankAndDepositInventory(character)
+          response = await actions.bankAndDeposit(character)
           const shouldExit = await actions.withdrawTaskCoins(character, response.data.character)
           if(shouldExit) {
             console.log("Not enough task coins to exchange.")
@@ -33,7 +36,7 @@ async function loop() {
 
 async function start() {
   response = await actions.waitForCooldown(character)
-  response = await actions.bankAndDepositInventory(character, response.data.character)
+  response = await actions.bankAndDeposit(character, response.data.character)
   const shouldExit = await actions.withdrawTaskCoins(character, response.data.character)
   if(shouldExit) {
     console.log("Not enough task coins to exchange.")

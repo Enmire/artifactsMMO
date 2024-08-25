@@ -25,7 +25,7 @@ async function loop() {
     case 200:
       amountCrafted += craftablePerTrip
       console.log(`Total amount of ${itemCode} crafted: ${amountCrafted}`)
-      response = await actions.bankAndDepositInventory(character, response.data.character)
+      response = await actions.bankAndDeposit(character, response.data.character)
       // Return if we've reach the desired amount to craft.
       if(amountCrafted >= amountToCraft) {
         console.log(`Crafted ${amountCrafted} ${itemCode}, which has reached the requested amount of ${amountToCraft}.`)
@@ -84,7 +84,7 @@ async function start() {
   })
 
   // Deposit all inventory.
-  response = await actions.bankAndDepositInventory(character)
+  response = await actions.bankAndDeposit(character)
 
   // Withdraw all required materials.
   response = await actions.withdrawAllItems(character, materialsArray, response.data.character)

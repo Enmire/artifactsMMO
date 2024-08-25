@@ -23,7 +23,7 @@ async function loop() {
         case 200:
           amountRecycled += maxRecyclable
           console.log(`Total amount of ${itemCode} recycled: ${amountRecycled}`)
-          await actions.bankAndDepositInventory(character)
+          await actions.bankAndDeposit(character)
 
           // Return if we've reach the desired amount to recycle.
           if(amountRecycled >= amountToRecycle) {
@@ -61,7 +61,7 @@ async function start() {
   
   await actions.waitForCooldown(character)
 
-  await actions.bankAndDepositInventory(character)
+  await actions.bankAndDeposit(character)
 
   maxRecyclable = utils.maxRecyclable(charData, itemData)
 

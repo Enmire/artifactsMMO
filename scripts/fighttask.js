@@ -6,8 +6,9 @@ import * as logger from './utilities/logsettings.js'
 logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
-const bank = await requests.getClosestTile("bank", {"x": 0, "y":0})
-let actionTile
+let bank
+let fightTile
+let requiredSlots
 let response
 
 async function loop() {
@@ -15,21 +16,21 @@ async function loop() {
     .then(async res => {
       response = res
       switch(response.status) {
-        case 497:
-          console.log(`${character}'s inventory is full. Attempting to deposit...`);
-          await actions.waitSeconds(5)
-          response = await actions.bankAndDepositInventory(character)
-          response = await actions.depositAllGold(character)
-          response = await actions.move(character, actionTile)
+        case 200:
+          if(response.data.character.task_progress === response.data.character.task_total) {
+            response = await actions.completeAndAcceptTask(character, response.data.character)
+            const monsterData = await requests.getMonsterData(response.data.character.task)
+            requiredSlots = monsterData.drops.length
+            const bankFightPair = await requests.getClosestBankAndTile(response.data.character.task)
+            bank = bankFightPair.bank
+            fightTile = bankFightPair.contentTile
+          }
+          response = await actions.bankAndDepositIfLessSlots(character, requiredSlots, response.data.character)
+          response = await actions.move(character, fightTile, response.data.character)
           loop()
           break;
         default:
-          if(response.data.character.task_progress === response.data.character.task_total) {
-            response = await actions.completeAndAcceptTask(character, response.data.character)
-            actionTile = await requests.getClosestTile(response.data.character.task, bank)
-            response = await actions.move(character, actionTile, response.data.character)
-          }
-          defaultHandler.handle(character, res.status, loop, actionTile)
+          defaultHandler.handle(character, res.status, loop, fightTile)
           break;
       }
     })
@@ -37,12 +38,16 @@ async function loop() {
 
 async function start() {
   response = await actions.waitForCooldown(character)
-  response = await actions.depositAllItemsIfInventoryIsFull(character, response.data.character)
   response = await actions.completeAndAcceptTask(character, response.data.character)
-  actionTile = await requests.getClosestTile(response.data.character.task, bank)
-  response = await actions.move(character, actionTile, response.data.character)
+  const monsterData = await requests.getMonsterData(response.data.character.task)
+  requiredSlots = monsterData.drops.length
+  const bankFightPair = await requests.getClosestBankAndTile(response.data.character.task)
+  bank = bankFightPair.bank
+  fightTile = bankFightPair.contentTile
+  response = await actions.bankAndDepositIfLessSlots(character, requiredSlots, response.data.character)
+  response = await actions.move(character, fightTile, response.data.character)
 
-  console.log("Starting fighting...")
+  console.log("Starting task fighting...")
   loop()
 }
 

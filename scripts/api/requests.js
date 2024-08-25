@@ -12,10 +12,22 @@ async function getItemData(itemCode) {
   return await controller.getRequest(url)
 }
 
+async function getAllItemDataByType(itemType) {
+  const url = `/items/?type=${itemType}`
+
+  return await controller.getRequestPaged(url)
+}
+
 async function getAllItemData() {
   const url = "/items"
 
   return await controller.getRequestPaged(url)
+}
+
+async function getResourceDataByCode(resourceCode) {
+  const url = `/resources/${resourceCode}`
+
+  return await controller.getRequest(url)
 }
 
 async function getResourceDataByDrop(itemCode) {
@@ -35,12 +47,17 @@ async function getFirstResourceDataByDrop(itemCode) {
   return allResourcesByDrop[0]
 }
 
-async function getBankItem(itemCode) {
+async function getResourceDataBySkill(skill) {
+  const url = `/resources/?skill=${skill}`
+
+  return await controller.getRequestPaged(url)
+}
+
+async function getBankItemByCode(itemCode) {
   const url = `/my/bank/items?item_code=${itemCode}`
 
   const responseArray = await controller.getRequestPaged(url)
   if(responseArray.length < 1) {
-    console.log(`Item ${itemCode} is not in bank.`)
     return {
       "code": itemCode,
       "quantity": 0
@@ -106,6 +123,53 @@ async function getClosestTile(contentCode, targetTile) {
   }
 
   return closestTile
+}
+
+async function getClosestTwoTiles(codeOne, codeTwo) {
+  const tileOneData = await getAllMapsByCode(codeOne)
+  const tileTwoData = await getAllMapsByCode(codeTwo)
+
+  if(tileOneData.length < 1)
+    throw new Error(`No tiles match contentCode: ${codeOne}.`)
+
+  if(tileTwoData.length < 1)
+    throw new Error(`No tiles match contentCode: ${codeTwo}.`)
+
+  let closestPair
+  let currentDistance
+  let highestDistance = Number.MAX_SAFE_INTEGER
+
+  for(const tileOne of tileOneData) {
+    for(const tileTwo of tileTwoData) {
+      currentDistance = Math.abs(tileOne.x - tileTwo.x) + Math.abs(tileOne.y - tileTwo.y)
+      //console.log(`Checking tile (${tileOne.x}, ${tileOne.y}) and tile (${tileTwo.x}, ${tileTwo.y}). Distance: ${currentDistance}.`)
+      if(currentDistance < highestDistance) {
+        closestPair = {tileOne, tileTwo}
+        highestDistance = currentDistance
+      }
+    }
+  }
+
+  console.log(`getClosestTwoTiles chose tiles ${closestPair.tileOne.content.code}(${closestPair.tileOne.x}, ${closestPair.tileOne.y}) and ${closestPair.tileTwo.content.code}(${closestPair.tileTwo.x}, ${closestPair.tileTwo.y}).`)
+
+  return closestPair
+}
+
+async function getClosestBankAndTile(contentCode) {
+  const bankAndTileData = await getClosestTwoTiles("bank", contentCode)
+  return {bank: bankAndTileData.tileOne, contentTile: bankAndTileData.tileTwo}
+}
+
+async function getAllMonstersByDrop(dropCode) {
+  const url = `/monsters?drop=${dropCode}`
+
+  return controller.getRequestPaged(url)
+}
+
+async function getMonsterData(monsterCode) {
+  const url = `/monsters/${monsterCode}`
+
+  return await controller.getRequest(url)
 }
 
 async function moveRequest(character, tile) {
@@ -233,16 +297,23 @@ async function deleteItem(character, itemCode, quantity) {
 export {
   getCharData,
   getItemData,
+  getAllItemDataByType,
   getAllItemData,
+  getResourceDataByCode,
   getResourceDataByDrop,
   getFirstResourceDataByDrop,
-  getBankItem,
+  getResourceDataBySkill,
+  getBankItemByCode,
   getAllBankItems,
   getBankItems,
   getAllMapsByCode,
   getAllMapsByType,
   getFirstTileByCode,
   getClosestTile,
+  getClosestTwoTiles,
+  getClosestBankAndTile,
+  getAllMonstersByDrop,
+  getMonsterData,
   moveRequest,
   equipRequest,
   unequipRequest,

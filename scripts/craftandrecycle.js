@@ -8,6 +8,7 @@ logger.addTimestampsToConsoleLogs()
 
 const character = process.argv[2]
 const itemCode = process.argv[3]
+const amountToCraft = process.argv[4]
 const charData = await requests.getCharData(character)
 const bank = await requests.getClosestTile("bank", charData)
 const itemData = await requests.getItemData(itemCode)
@@ -23,7 +24,7 @@ async function loop() {
         case 200:
           amountCrafted += maxCraftable
           console.log(`Total amount of ${itemCode} crafted: ${amountCrafted}`)
-          await actions.bankAndDepositInventory(character)
+          await actions.bankAndDeposit(character)
           // Return if we've reach the desired amount to craft.
           if(amountCrafted >= amountToCraft) {
             console.log(`Crafted ${amountCrafted} ${itemCode}, which has reached the requested amount of ${amountToCraft}.`)
@@ -73,7 +74,7 @@ async function start() {
   })
 
   // Deposit all inventory.
-  await actions.bankAndDepositInventory(character)
+  await actions.bankAndDeposit(character)
 
   // Withdraw all required materials.
   await actions.withdrawAllItems(character, materialsArray)

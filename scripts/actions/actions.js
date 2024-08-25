@@ -27,7 +27,7 @@ async function equipItemsFromBank(character, itemArray, charData) {
   if(charData === undefined)
     returnData.data.character = await requests.getCharData(character)
 
-  returnData = await bankAndDepositInventory(character, returnData.data.character)
+  returnData = await bankAndDeposit(character, returnData.data.character)
 
   let itemDataArray = []
   for(const item of itemArray) {
@@ -36,8 +36,6 @@ async function equipItemsFromBank(character, itemArray, charData) {
   }
 
   const equipInfo = utils.equipmentToSlotArray(returnData.data.character, itemDataArray)
-
-  console.log(equipInfo)
 
   if(equipInfo.filter(item => item.slot.includes("consumable")).length > 0)
     returnData = await unequipAndDepositAllConsumables(character, returnData.data.character)
@@ -57,6 +55,29 @@ async function equipItemsFromBank(character, itemArray, charData) {
   return returnData
 }
 
+async function equipGatherTool(character, gatherType, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
+  let toolData = (await requests.getAllItemDataByType("weapon")).filter(item => item.effects.some(effect => effect.name === gatherType))
+  toolData = toolData.sort(utils.sortTools(gatherType))
+  let bankTools = []
+
+  for(const tool of toolData) {
+    const bankTool = await requests.getBankItemByCode(tool.code)
+    if (bankTool.quantity > 0)
+      bankTools.push(tool)
+  }
+
+  const equippedWeaponData = toolData.filter(tool => tool.code === returnData.data.character.weapon_slot)
+    
+  if(bankTools.length > 0 && (equippedWeaponData.length < 1 || Math.abs(equippedWeaponData[0].effects[1].value) < Math.abs(bankTools[0].effects[1].value)))
+    returnData = await equipItemsFromBank(character, [bankTools[0].code], returnData.data.character)
+
+  return returnData
+}
+
 async function completeAndAcceptTask(character, charData) {
   let returnData = {data: {character: charData}}
   if(charData === undefined)
@@ -66,15 +87,13 @@ async function completeAndAcceptTask(character, charData) {
 
   // Incomplete Task
   if(returnData.data.character.task !== "" && returnData.data.character.task_progress !== returnData.data.character.task_total) {
-    console.log("Task is not complete and can't be turned in.")
     return returnData
   }
 
   // Complete Task
   if(returnData.data.character.task !== "" && returnData.data.character.task_progress === returnData.data.character.task_total) {
-    if(utils.areSlotsAvailable(returnData.data.character, 2)) {
-      console.log("Less than two inventory slots available, depositing.")
-      returnData = await bankAndDepositInventory(character)
+    if(!utils.areSlotsAvailable(returnData.data.character, 2)) {
+      returnData = await bankAndDeposit(character)
     }
   }
 
@@ -99,11 +118,12 @@ async function depositAllItems(character, charData) {
   return returnData
 }
 
-async function bankAndDepositInventory(character, charData) {
+async function bankAndDeposit(character, charData) {
   if(charData === undefined)
     charData = await requests.getCharData(character)
-  const bank = await requests.getFirstTileByCode("bank")
-  const response = await move(character, bank, charData)
+  const bank = await requests.getClosestTile("bank", charData)
+  let response = await move(character, bank, charData)
+  response = await depositAllGold(character, response.data.character)
   return await depositAllItems(character, response.data.character)
 }
 
@@ -113,9 +133,21 @@ async function depositAllItemsIfInventoryIsFull(character, charData) {
     returnData.data.character = await requests.getCharData(character)
 
   if(utils.isInventoryFull(returnData.data.character)) 
-    return await bankAndDepositInventory(character, returnData.data.character)
+    return await bankAndDeposit(character, returnData.data.character)
 
   return returnData
+}
+
+async function bankAndDepositIfLessSlots(character, slots, charData) {
+  let returnData = {data: {character: charData}}
+  if(charData === undefined)
+    returnData.data.character = await requests.getCharData(character)
+
+  if(utils.areSlotsAvailable(returnData.data.character, slots))
+    return returnData
+
+  console.log(`${character} has less than ${slots} slots remaining. Depositing.`)
+  return await bankAndDeposit(character, returnData.data.character)
 }
 
 async function depositAllGold(character, charData) {
@@ -126,7 +158,6 @@ async function depositAllGold(character, charData) {
   if(returnData.data.character.gold > 0)
     return await requests.depositGold(character, charData.gold)
   
-  console.log("No gold to deposit.")
   return returnData
 }  
 
@@ -144,7 +175,7 @@ async function withdrawAllItems(character, itemArray, charData) {
       bankData = returnData.data.bank
     }
     else
-      console.log(`Not enough ${item.code} in bank. Bank data: ${bankItem}`)
+      throw new Error(`Not enough ${item.code} in bank. Requested: ${item.quantity}. Bank: ${bankItem === null ? 0 : bankItem.quantity}`)
   }
 
   return returnData
@@ -156,7 +187,7 @@ async function withdrawTaskCoins(character, charData) {
     returnData.data.character = await requests.getCharData(character)
 
   const itemCode = "tasks_coin"
-  const bankCoinData = await requests.getBankItem(itemCode)
+  const bankCoinData = await requests.getBankItemByCode(itemCode)
 
   if(bankCoinData.quantity < 3)
     return true
@@ -172,7 +203,7 @@ async function unequipAndDepositRings(character, charData) {
   if(charData === undefined)
     returnData.data.character = await requests.getCharData(character)
 
-  returnData = await bankAndDepositInventory()
+  returnData = await bankAndDeposit()
 
   if(returnData.data.character.ring1_slot !== "")
     returnData = await requests.unequipRequest(character, "ring1_slot")
@@ -180,7 +211,7 @@ async function unequipAndDepositRings(character, charData) {
   if(returnData.data.character.ring2_slot !== "")
     returnData = await requests.unequipRequest(character, "ring2_slot")
 
-  returnData = await bankAndDepositInventory()
+  returnData = await bankAndDeposit()
 
   return returnData
 }
@@ -193,7 +224,7 @@ async function unequipAndDepositAllConsumables(character, charData) {
   let currentInventory = utils.inventoryTotal(returnData.data.character)
 
   if(currentInventory + returnData.data.character.consumable1_slot_quantity > returnData.data.character.inventory_max_items)
-    returnData = await bankAndDepositInventory(character, returnData.data.character)
+    returnData = await bankAndDeposit(character, returnData.data.character)
 
   if(returnData.data.character.consumable1_slot !== "")
     returnData = await requests.unequipRequest(character, "consumable1")
@@ -201,12 +232,12 @@ async function unequipAndDepositAllConsumables(character, charData) {
   currentInventory = utils.inventoryTotal(returnData.data.character)
 
   if(currentInventory + returnData.data.character.consumable2_slot_quantity > returnData.data.character.inventory_max_items)
-    returnData = await bankAndDepositInventory(character, returnData.data.character)
+    returnData = await bankAndDeposit(character, returnData.data.character)
 
   if(returnData.data.character.consumable2_slot !== "")
     returnData = await requests.unequipRequest(character, "consumable1")
 
-  returnData = await bankAndDepositInventory(character, returnData.data.character)
+  returnData = await bankAndDeposit(character, returnData.data.character)
 
   return returnData
 }
@@ -222,7 +253,7 @@ async function withdrawAndEquipBassIfNeeded(character, bassAmount, charData) {
   if(slot !== null && returnData.data.character[`${slot}_slot_quantity`] >= bassAmount)
     return returnData
 
-  returnData = await bankAndDepositInventory(character, returnData.data.character)
+  returnData = await bankAndDeposit(character, returnData.data.character)
 
   returnData = await unequipAndDepositAllConsumables(character, returnData.data.character)
 
@@ -237,13 +268,16 @@ async function waitSeconds(timeInSeconds) {
 export {
   move,
   equipItemsFromBank,
+  equipGatherTool,
   waitForCooldown,
   completeAndAcceptTask,
-  bankAndDepositInventory,
+  bankAndDeposit,
   depositAllItemsIfInventoryIsFull,
+  bankAndDepositIfLessSlots,
   depositAllGold,
   withdrawAllItems,
   withdrawTaskCoins,
+  unequipAndDepositRings,
   unequipAndDepositAllConsumables,
   withdrawAndEquipBassIfNeeded,
   waitSeconds
